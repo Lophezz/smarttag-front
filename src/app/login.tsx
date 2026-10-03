@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { KeyboardAvoidingView, Platform, Alert } from "react-native";
-import { router } from "expo-router";
+import { router, Stack } from "expo-router";
 import { YStack, Text, Input, Button, Label, XStack, Spinner } from "tamagui";
 import axios from "axios";
 import api from "../services/api";
@@ -49,6 +49,7 @@ export default function Login() {
       style={{ flex: 1, backgroundColor: "#0F172A" }}
       behavior={Platform.OS === "ios" ? "padding" : "height"}
     >
+      <Stack.Screen options={{ headerShown: false }} />
       <YStack f={1} jc="center" px="$6" gap="$4">
         {/* Título */}
         <YStack ai="center" mb="$6">

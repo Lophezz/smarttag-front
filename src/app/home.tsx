@@ -1,15 +1,14 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useCallback } from "react";
 import { SafeAreaView, ScrollView, Alert } from "react-native";
 import { YStack, XStack, Text, Button, Avatar, Spinner } from "tamagui";
 import { Feather, Ionicons } from "@expo/vector-icons";
-import { router } from "expo-router";
+import { router, useFocusEffect, Stack } from "expo-router";
 import api from "../services/api";
 
-// Dados mockados mantidos para as ações recentes
+// Ações recentes ainda mockadas até fazermos a aba de notificações
 const acoesRecentes = [
-  { id: "1", titulo: "Remoção rápida", pontos: "+10", icone: "star" },
-  { id: "2", titulo: "Vaga solidária liberada", pontos: "+5", icone: "star" },
-  { id: "3", titulo: "Farol aceso ajudado", pontos: "+12", icone: "star" },
+  { id: "1", titulo: "Alerta de Farol Aceso", pontos: "+5", icone: "star" },
+  { id: "2", titulo: "Alerta de Vidro Aberto", pontos: "+5", icone: "star" },
 ];
 
 export default function Home() {
@@ -17,30 +16,43 @@ export default function Home() {
   const [usuario, setUsuario] = useState({
     nome: "",
     foto: "https://i.pravatar.cc/150?img=11",
-    pontos: 320, // Mockado até o backend ter sistema de pontos
+    pontos: 0,
+    status: "Novato",
   });
 
-  useEffect(() => {
-    buscarDadosUsuario();
-  }, []);
+  // Função para formatar o Enum do backend (ex: CIDADAO_CONFIAVEL -> Cidadão Confiável)
+  const formatarStatus = (status: string) => {
+    if (!status) return "Novato";
+    const formatado = status.replace(/_/g, " ").toLowerCase();
+    return formatado.charAt(0).toUpperCase() + formatado.slice(1);
+  };
+
+  // useFocusEffect recarrega os dados toda vez que a tela ganha foco
+  useFocusEffect(
+    useCallback(() => {
+      buscarDadosUsuario();
+    }, []),
+  );
 
   const buscarDadosUsuario = async () => {
+    setIsLoading(true);
     try {
       const response = await api.get("/auth/me");
-      const dadosUsuario = response.data;
+      const dados = response.data;
 
-      // Atualiza com o nome real vindo do banco de dados
       setUsuario((prev) => ({
         ...prev,
-        nome: dadosUsuario.nome || "Usuário",
+        nome: dados.nome || "Usuário",
+        // Fallbacks adicionados para quando o backend não enviar os dados
+        pontos: dados.pontos || 0,
+        status: formatarStatus(dados.citizienStatus),
       }));
 
-      // Verificação de Primeiro Acesso / Dados Incompletos
-      // Se não houver telefone ou CPF cadastrado, exibe o pop-up
-      if (!dadosUsuario.telefone || !dadosUsuario.cpf) {
+      // Pop-up de alerta caso o cadastro esteja incompleto
+      if (!dados.telefone || !dados.cpf) {
         Alert.alert(
           "Complete seu Cadastro",
-          "Percebemos que seus dados estão incompletos. Atualize seu perfil para utilizar todos os recursos da Smart Tag.",
+          "Percebemos que os seus dados estão incompletos. Atualize o seu perfil para utilizar todos os recursos da Smart Tag.",
           [
             { text: "Fazer Depois", style: "cancel" },
             {
@@ -52,7 +64,6 @@ export default function Home() {
       }
     } catch (error) {
       console.error("Erro ao buscar usuário:", error);
-      // Mantém silencioso para não incomodar caso seja apenas uma falha de rede momentânea
     } finally {
       setIsLoading(false);
     }
@@ -60,6 +71,7 @@ export default function Home() {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: "#0F172A" }}>
+      <Stack.Screen options={{ headerShown: false }} />
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ flexGrow: 1 }}
@@ -99,7 +111,7 @@ export default function Home() {
             borderColor="#334155"
           >
             <Text fontSize="$4" fontWeight="600">
-              <Text color="$blue10">Bom cidadão - </Text>
+              <Text color="$blue10">{usuario.status} - </Text>
               <Text color="white">{usuario.pontos} pontos</Text>
             </Text>
           </XStack>
@@ -122,24 +134,13 @@ export default function Home() {
                 </Text>
                 <XStack ai="center" gap="$2">
                   <Text color="#10B981" fontSize="$3">
-                    {acao.pontos} pontos
+                    {acao.pontos} pts
                   </Text>
                   <Feather name={acao.icone as any} size={16} color="white" />
                 </XStack>
               </XStack>
             ))}
           </YStack>
-
-          <Button
-            size="$5"
-            bg="#2A9D8F"
-            color="white"
-            fontWeight="700"
-            mt="$4"
-            pressStyle={{ scale: 0.97, opacity: 0.8 }}
-          >
-            Histórico de Ações
-          </Button>
         </YStack>
       </ScrollView>
 
@@ -172,7 +173,7 @@ export default function Home() {
         >
           <Feather name="bell" size={24} color="white" />
           <Text color="white" fontSize={10}>
-            Notificações
+            Alertas
           </Text>
         </YStack>
         <YStack

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useCallback } from "react";
 import {
   SafeAreaView,
   ScrollView,
@@ -8,7 +8,7 @@ import {
 } from "react-native";
 import { YStack, XStack, Text, Button, Spinner, Input, Label } from "tamagui";
 import { Feather, Ionicons } from "@expo/vector-icons";
-import { router } from "expo-router";
+import { router, useFocusEffect, Stack } from "expo-router";
 import api from "../services/api";
 
 export default function Perfil() {
@@ -17,7 +17,6 @@ export default function Perfil() {
   const [isDeleting, setIsDeleting] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
 
-  // Armazena o ID e os dados editáveis
   const [userId, setUserId] = useState("");
   const [formData, setFormData] = useState({
     nome: "",
@@ -25,14 +24,17 @@ export default function Perfil() {
     cpf: "",
   });
 
-  useEffect(() => {
-    carregarDadosUsuario();
-  }, []);
+  useFocusEffect(
+    useCallback(() => {
+      carregarDadosUsuario();
+    }, []),
+  );
 
   const carregarDadosUsuario = async () => {
+    setIsLoading(true);
     try {
       const response = await api.get("/auth/me");
-      setUserId(response.data.id); // Guarda o ID para a exclusão
+      setUserId(response.data.id);
       setFormData({
         nome: response.data.nome || "",
         telefone: response.data.telefone || "",
@@ -46,18 +48,22 @@ export default function Perfil() {
   };
 
   const handleAtualizarDados = async () => {
+    if (!formData.nome) {
+      Alert.alert("Aviso", "O campo Nome não pode estar vazio.");
+      return;
+    }
+
     setIsSaving(true);
     try {
-      // Trocamos de POST para PUT aqui
       await api.put("/auth", {
         nome: formData.nome,
         telefone: formData.telefone,
         cpf: formData.cpf,
       });
-      Alert.alert("Sucesso", "Seus dados foram atualizados com sucesso!");
+      Alert.alert("Sucesso", "Os seus dados foram atualizados com sucesso!");
     } catch (error) {
       console.error("Erro ao atualizar:", error);
-      Alert.alert("Erro", "Ocorreu um problema ao salvar seus dados.");
+      Alert.alert("Erro", "Ocorreu um problema ao guardar os seus dados.");
     } finally {
       setIsSaving(false);
     }
@@ -80,12 +86,10 @@ export default function Perfil() {
 
   const deletarConta = async () => {
     if (!userId) return;
-
     setIsDeleting(true);
     try {
-      // DELETE usando o ID capturado no GET
       await api.delete(`/auth/${userId}`);
-      Alert.alert("Conta Excluída", "Sua conta foi apagada com sucesso.");
+      Alert.alert("Conta Excluída", "A sua conta foi apagada com sucesso.");
       router.replace("/login");
     } catch (error) {
       console.error("Erro ao deletar:", error);
@@ -115,6 +119,7 @@ export default function Perfil() {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: "#0F172A" }}>
+      <Stack.Screen options={{ headerShown: false }} />
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === "ios" ? "padding" : "height"}
@@ -122,12 +127,11 @@ export default function Perfil() {
         <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
           <YStack f={1} px="$6" pt="$8" pb="$4" gap="$4">
             <Text fontSize="$7" fontWeight="bold" color="white" mb="$2">
-              Meu Perfil
+              O Meu Perfil
             </Text>
 
-            {/* Formulário de Atualização */}
             <YStack gap="$2">
-              <Label color="white">Nome</Label>
+              <Label color="white">Nome Completo</Label>
               <Input
                 value={formData.nome}
                 onChangeText={(text) =>
@@ -175,13 +179,11 @@ export default function Perfil() {
               disabled={isSaving}
               icon={isSaving ? () => <Spinner color="white" /> : undefined}
             >
-              {isSaving ? "Salvando..." : "Atualizar Dados"}
+              {isSaving ? "A guardar..." : "Atualizar Dados"}
             </Button>
 
-            {/* Separador */}
             <YStack borderBottomWidth={1} borderColor="#334155" my="$4" />
 
-            {/* Ações de Conta */}
             <YStack gap="$3" mt="auto">
               <Button
                 size="$4"
@@ -193,7 +195,7 @@ export default function Perfil() {
                 disabled={isDeleting}
                 icon={isDeleting ? () => <Spinner color="$red10" /> : undefined}
               >
-                {isDeleting ? "Apagando..." : "Excluir Minha Conta"}
+                {isDeleting ? "A apagar..." : "Excluir a Minha Conta"}
               </Button>
 
               <Button
@@ -240,7 +242,7 @@ export default function Perfil() {
         >
           <Feather name="bell" size={24} color="white" />
           <Text color="white" fontSize={10}>
-            Notificações
+            Alertas
           </Text>
         </YStack>
         <YStack
