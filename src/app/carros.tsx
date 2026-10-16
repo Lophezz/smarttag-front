@@ -23,6 +23,10 @@ export default function Carros() {
 
   const [qrCodeAmpliado, setQrCodeAmpliado] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
+  
+  // ESTADO ADICIONADO PARA MEMORIZAR A PLACA ORIGINAL
+  const [placaOriginal, setPlacaOriginal] = useState<string | null>(null);
+  
   const [formData, setFormData] = useState({
     modelo: "",
     ano: "",
@@ -64,12 +68,14 @@ export default function Carros() {
 
   const abrirModalNovo = () => {
     setEditingId(null);
+    setPlacaOriginal(null); // Limpa a memória para um carro novo
     setFormData({ modelo: "", ano: "", placa: "", imagem: null });
     setModalVisible(true);
   };
 
   const abrirModalEditar = (carro: any) => {
     setEditingId(carro.id);
+    setPlacaOriginal(carro.placa); // Guarda a placa que veio do banco
     setFormData({
       modelo: carro.modelo,
       ano: carro.ano,
@@ -80,40 +86,36 @@ export default function Carros() {
   };
 
   const salvarCarro = async () => {
-    if (!formData.modelo || !formData.ano || !formData.placa) {
-      Alert.alert("Aviso", "Modelo, Ano e Placa são obrigatórios.");
+    // Validação básica
+    if (!editingId && (!formData.modelo || !formData.ano || !formData.placa)) {
+      Alert.alert("Aviso", "Modelo, Ano e Placa são obrigatórios para um novo veículo.");
       return;
     }
 
     const regexPlaca = /^[A-Z]{3}-?[0-9][A-Z0-9][0-9]{2}$/i;
-    if (!regexPlaca.test(formData.placa)) {
-      Alert.alert(
-        "Placa Inválida",
-        "Insira uma placa válida (Ex: ABC-1234 ou ABC1A23).",
-      );
-      return;
-    }
-
-    const isNovaImagem =
-      formData.imagem &&
-      formData.imagem.uri &&
-      !formData.imagem.uri.startsWith("http");
-
-    if (editingId && !isNovaImagem) {
-      Alert.alert(
-        "Atenção",
-        "Como exigência do sistema, é necessário selecionar a foto do carro novamente para poder salvar a edição.",
-      );
+    if (formData.placa && !regexPlaca.test(formData.placa)) {
+      Alert.alert("Placa Inválida", "Insira uma placa válida (Ex: ABC-1234 ou ABC1A23).");
       return;
     }
 
     setIsSubmitting(true);
     try {
       const form = new FormData();
-      form.append("modelo", formData.modelo);
-      form.append("ano", formData.ano);
-      form.append("placa", formData.placa.toUpperCase());
+      // O backend agora aceita apenas os campos que queremos alterar (PATCH)
+      if (formData.modelo) form.append("modelo", formData.modelo);
+      if (formData.ano) form.append("ano", formData.ano);
+      
+      // SÓ ENVIA A PLACA SE O UTILIZADOR A TIVER ALTERADO
+      if (formData.placa && formData.placa.toUpperCase() !== placaOriginal?.toUpperCase()) {
+        form.append("placa", formData.placa.toUpperCase());
+      }
 
+      const isNovaImagem =
+        formData.imagem &&
+        formData.imagem.uri &&
+        !formData.imagem.uri.startsWith("http");
+
+      // Anexa a imagem apenas se for realmente um novo arquivo local
       if (isNovaImagem) {
         if (Platform.OS === "web") {
           const response = await fetch(formData.imagem.uri);
@@ -129,7 +131,8 @@ export default function Carros() {
       }
 
       if (editingId) {
-        await api.put(`/car/${editingId}`, form);
+        // Alterado de PUT para PATCH para espelhar a atualização do backend
+        await api.patch(`/car/${editingId}`, form);
         Alert.alert("Sucesso", "Veículo atualizado!");
       } else {
         await api.post("/car/add", form);
@@ -140,16 +143,10 @@ export default function Carros() {
       carregarCarros();
     } catch (error: any) {
       console.error("Erro ao salvar carro:", error);
-
-      // MENSAGEM CORRIGIDA PARA REFLETIR O PROBLEMA REAL DO BACKEND
       let mensagemErro = "Não foi possível guardar os dados do veículo.";
-      if (error.response && error.response.status === 403) {
-        mensagemErro =
-          "Erro Interno do Servidor. O backend bloqueou a edição (Erro 403). Isso costuma ocorrer devido a uma falha do método PUT ao processar a imagem.";
-      } else if (error.response) {
+      if (error.response) {
         mensagemErro = error.response.data?.message || mensagemErro;
       }
-
       Alert.alert("Aviso do Sistema", mensagemErro);
     } finally {
       setIsSubmitting(false);
@@ -172,14 +169,10 @@ export default function Carros() {
               carregarCarros();
             } catch (error: any) {
               console.error("Erro ao deletar:", error);
-
-              // MENSAGEM CORRIGIDA PARA OS "CARROS FANTASMAS"
               let mensagemErro = "Não foi possível remover o veículo.";
               if (error.response && error.response.status === 403) {
-                mensagemErro =
-                  "Veículo Fantasma (Erro 403). Este carro possui dados antigos ou corrompidos. Peça ao administrador para removê-lo diretamente do banco de dados.";
+                mensagemErro = "Veículo Fantasma (Erro 403). Este carro possui dados antigos ou corrompidos. Peça ao administrador para removê-lo diretamente do banco de dados.";
               }
-
               Alert.alert("Aviso do Sistema", mensagemErro);
             }
           },
@@ -191,22 +184,12 @@ export default function Carros() {
   const alternarModoPrivacidade = async (id: string, estadoAtual: boolean) => {
     const novoEstado = !estadoAtual;
     try {
-      await api.patch(`/car/${id}/toggle_alert`, {
-        PermitirAlertas: novoEstado,
-      });
-      Alert.alert(
-        "Modo Privacidade",
-        novoEstado
-          ? "Recebimento de alertas ativado."
-          : "Alertas bloqueados com sucesso. Ninguém poderá enviar mensagens para este veículo.",
-      );
+      await api.patch(`/car/${id}/toggle_alert`, { PermitirAlertas: novoEstado });
+      Alert.alert("Modo Privacidade", novoEstado ? "Recebimento de alertas ativado." : "Alertas bloqueados com sucesso. Ninguém poderá enviar mensagens para este veículo.");
       carregarCarros();
     } catch (error) {
       console.error("Erro ao alternar privacidade:", error);
-      Alert.alert(
-        "Erro",
-        "Não foi possível alterar as definições de privacidade.",
-      );
+      Alert.alert("Erro", "Não foi possível alterar as definições de privacidade.");
     }
   };
 
@@ -222,10 +205,7 @@ export default function Carros() {
           onPress: async () => {
             try {
               await api.put(`/car/qrcode/${id}`);
-              Alert.alert(
-                "Sucesso",
-                "Novo QR Code gerado. Lembre-se de imprimir a nova etiqueta.",
-              );
+              Alert.alert("Sucesso", "Novo QR Code gerado. Lembre-se de imprimir a nova etiqueta.");
               carregarCarros();
             } catch (error) {
               console.error("Erro ao gerar QR Code:", error);
@@ -233,7 +213,7 @@ export default function Carros() {
             }
           },
         },
-      ],
+      ]
     );
   };
 
@@ -241,15 +221,7 @@ export default function Carros() {
     <SafeAreaView style={{ flex: 1, backgroundColor: "#0F172A" }}>
       <Stack.Screen options={{ headerShown: false }} />
 
-      <XStack
-        px="$6"
-        pt="$8"
-        pb="$4"
-        jc="space-between"
-        ai="center"
-        accessible={true}
-        accessibilityRole="header"
-      >
+      <XStack px="$6" pt="$8" pb="$4" jc="space-between" ai="center" accessible={true} accessibilityRole="header">
         <Text fontSize="$7" fontWeight="bold" color="white">
           Meus Carros
         </Text>
@@ -270,17 +242,9 @@ export default function Carros() {
           <Spinner size="large" color="$blue10" />
         </YStack>
       ) : (
-        <ScrollView
-          contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 24 }}
-        >
+        <ScrollView contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 24 }}>
           {carros.length === 0 ? (
-            <YStack
-              ai="center"
-              mt="$10"
-              gap="$4"
-              accessible={true}
-              accessibilityLabel="Você não possui nenhum veículo cadastrado"
-            >
+            <YStack ai="center" mt="$10" gap="$4" accessible={true} accessibilityLabel="Você não possui nenhum veículo cadastrado">
               <Ionicons name="car-sport-outline" size={64} color="#334155" />
               <Text color="#94A3B8" fontSize="$4">
                 Nenhum carro cadastrado.
@@ -306,13 +270,7 @@ export default function Carros() {
                     accessibilityLabel={`Foto do veículo ${carro.modelo}`}
                   />
                 ) : (
-                  <YStack
-                    width="100%"
-                    height={160}
-                    bg="#0F172A"
-                    jc="center"
-                    ai="center"
-                  >
+                  <YStack width="100%" height={160} bg="#0F172A" jc="center" ai="center">
                     <Ionicons name="car" size={48} color="#334155" />
                   </YStack>
                 )}
@@ -320,12 +278,7 @@ export default function Carros() {
                 <YStack p="$4" gap="$2">
                   <XStack jc="space-between" ai="flex-start">
                     <YStack f={1} pr="$2">
-                      <Text
-                        color="white"
-                        fontSize="$5"
-                        fontWeight="bold"
-                        numberOfLines={1}
-                      >
+                      <Text color="white" fontSize="$5" fontWeight="bold" numberOfLines={1}>
                         {carro.modelo}
                       </Text>
                       <Text color="#94A3B8" fontSize="$3">
@@ -345,12 +298,7 @@ export default function Carros() {
                           value={`https://smarttag-front.vercel.app/alerta/${carro.qrcode}`}
                           size={50}
                         />
-                        <Text
-                          color="black"
-                          fontSize={9}
-                          mt="$1"
-                          fontWeight="bold"
-                        >
+                        <Text color="black" fontSize={9} mt="$1" fontWeight="bold">
                           TOCAR
                         </Text>
                       </YStack>
@@ -361,29 +309,14 @@ export default function Carros() {
                     <Button
                       f={1}
                       size="$3"
-                      bg={
-                        carro.AllowAlert
-                          ? "rgba(16, 185, 129, 0.15)"
-                          : "rgba(239, 68, 68, 0.15)"
-                      }
+                      bg={carro.AllowAlert ? "rgba(16, 185, 129, 0.15)" : "rgba(239, 68, 68, 0.15)"}
                       color={carro.AllowAlert ? "#10B981" : "#EF4444"}
                       borderWidth={1}
                       borderColor={carro.AllowAlert ? "#10B981" : "#EF4444"}
-                      icon={
-                        <Feather
-                          name={carro.AllowAlert ? "bell" : "bell-off"}
-                          size={16}
-                        />
-                      }
-                      onPress={() =>
-                        alternarModoPrivacidade(carro.id, carro.AllowAlert)
-                      }
+                      icon={<Feather name={carro.AllowAlert ? "bell" : "bell-off"} size={16} />}
+                      onPress={() => alternarModoPrivacidade(carro.id, carro.AllowAlert)}
                       accessibilityRole="button"
-                      accessibilityLabel={
-                        carro.AllowAlert
-                          ? "Bloquear alertas (Ativar modo privacidade)"
-                          : "Permitir alertas (Desativar modo privacidade)"
-                      }
+                      accessibilityLabel={carro.AllowAlert ? "Bloquear alertas (Ativar modo privacidade)" : "Permitir alertas (Desativar modo privacidade)"}
                     >
                       {carro.AllowAlert ? "Alertas ON" : "Alertas OFF"}
                     </Button>
@@ -438,16 +371,7 @@ export default function Carros() {
 
       <Modal visible={!!qrCodeAmpliado} animationType="fade" transparent={true}>
         <YStack f={1} bg="rgba(0, 0, 0, 0.85)" jc="center" ai="center" px="$6">
-          <YStack
-            bg="white"
-            p="$6"
-            br="$4"
-            ai="center"
-            gap="$4"
-            width="100%"
-            accessible={true}
-            accessibilityViewIsModal={true}
-          >
+          <YStack bg="white" p="$6" br="$4" ai="center" gap="$4" width="100%" accessible={true} accessibilityViewIsModal={true}>
             <Text fontSize="$5" fontWeight="bold" color="#0F172A">
               O seu SmartTag
             </Text>
@@ -460,8 +384,7 @@ export default function Carros() {
               </YStack>
             )}
             <Text color="#64748B" fontSize="$3" textAlign="center" mt="$2">
-              Qualquer pessoa pode apontar a câmera para este código para lhe
-              enviar alertas anônimos.
+              Qualquer pessoa pode apontar a câmera para este código para lhe enviar alertas anônimos.
             </Text>
             <Button
               size="$4"
@@ -481,15 +404,7 @@ export default function Carros() {
 
       <Modal visible={modalVisible} animationType="slide" transparent={true}>
         <YStack f={1} bg="rgba(15, 23, 42, 0.95)" jc="flex-end">
-          <YStack
-            bg="#1E293B"
-            p="$6"
-            borderTopLeftRadius={24}
-            borderTopRightRadius={24}
-            gap="$4"
-            accessible={true}
-            accessibilityViewIsModal={true}
-          >
+          <YStack bg="#1E293B" p="$6" borderTopLeftRadius={24} borderTopRightRadius={24} gap="$4" accessible={true} accessibilityViewIsModal={true}>
             <XStack jc="space-between" ai="center" mb="$2">
               <Text color="white" fontSize="$6" fontWeight="bold">
                 {editingId ? "Editar Veículo" : "Novo Veículo"}
@@ -511,23 +426,14 @@ export default function Carros() {
                 color="white"
                 onPress={selecionarImagem}
                 accessibilityRole="button"
-                accessibilityLabel={
-                  formData.imagem
-                    ? "Trocar Imagem do veículo"
-                    : "Selecionar Imagem do Carro da galeria"
-                }
+                accessibilityLabel={formData.imagem ? "Trocar Imagem do veículo" : "Selecionar Imagem do Carro da galeria"}
               >
                 {formData.imagem ? "Trocar Imagem" : "Selecionar Imagem"}
               </Button>
               {formData.imagem && (
                 <Image
                   source={{ uri: formData.imagem.uri }}
-                  style={{
-                    width: 100,
-                    height: 75,
-                    borderRadius: 8,
-                    marginTop: 8,
-                  }}
+                  style={{ width: 100, height: 75, borderRadius: 8, marginTop: 8 }}
                   accessible={true}
                   accessibilityLabel="Pré-visualização da imagem do veículo"
                 />
@@ -535,9 +441,7 @@ export default function Carros() {
             </YStack>
 
             <YStack gap="$2">
-              <Label color="white" htmlFor="modelo">
-                Modelo
-              </Label>
+              <Label color="white" htmlFor="modelo">Modelo</Label>
               <Input
                 id="modelo"
                 value={formData.modelo}
@@ -551,9 +455,7 @@ export default function Carros() {
 
             <XStack gap="$4">
               <YStack f={1} gap="$2">
-                <Label color="white" htmlFor="ano">
-                  Ano
-                </Label>
+                <Label color="white" htmlFor="ano">Ano</Label>
                 <Input
                   id="ano"
                   value={formData.ano}
@@ -566,9 +468,7 @@ export default function Carros() {
                 />
               </YStack>
               <YStack f={1} gap="$2">
-                <Label color="white" htmlFor="placa">
-                  Placa
-                </Label>
+                <Label color="white" htmlFor="placa">Placa</Label>
                 <Input
                   id="placa"
                   value={formData.placa}
@@ -593,11 +493,7 @@ export default function Carros() {
               disabled={isSubmitting}
               icon={isSubmitting ? () => <Spinner color="white" /> : undefined}
               accessibilityRole="button"
-              accessibilityLabel={
-                editingId
-                  ? "Guardar alterações do veículo"
-                  : "Adicionar novo veículo"
-              }
+              accessibilityLabel={editingId ? "Guardar alterações do veículo" : "Adicionar novo veículo"}
             >
               {isSubmitting ? "A Guardar..." : "Guardar Veículo"}
             </Button>
@@ -605,70 +501,26 @@ export default function Carros() {
         </YStack>
       </Modal>
 
-      <XStack
-        bg="#0F172A"
-        pt="$3"
-        pb="$5"
-        px="$6"
-        jc="space-between"
-        borderTopWidth={1}
-        borderTopColor="#1E293B"
-      >
-        <YStack
-          ai="center"
-          gap="$1"
-          opacity={0.5}
-          onPress={() => router.replace("/home")}
-          accessible={true}
-          accessibilityRole="button"
-          accessibilityLabel="Aba Home"
-        >
+      <XStack bg="#0F172A" pt="$3" pb="$5" px="$6" jc="space-between" borderTopWidth={1} borderTopColor="#1E293B">
+        <YStack ai="center" gap="$1" opacity={0.5} onPress={() => router.replace("/home")} accessible={true} accessibilityRole="button" accessibilityLabel="Aba Home">
           <Feather name="home" size={24} color="white" />
-          <Text color="white" fontSize={10}>
-            Home
-          </Text>
+          <Text color="white" fontSize={10}>Home</Text>
         </YStack>
-        <YStack
-          ai="center"
-          gap="$1"
-          opacity={1}
-          onPress={() => router.replace("/mensagens")}
-          accessible={true}
-          accessibilityRole="button"
-          accessibilityLabel="Aba atual: Mensagens"
-        >
+        <YStack ai="center" gap="$1" opacity={0.5} onPress={() => router.replace("/mensagens")} accessible={true} accessibilityRole="button" accessibilityLabel="Aba Mensagens">
           <Feather name="message-circle" size={24} color="white" />
-          <Text color="white" fontSize={10}>
-            Chats
-          </Text>
+          <Text color="white" fontSize={10}>Chats</Text>
         </YStack>
-        <YStack
-          ai="center"
-          gap="$1"
-          opacity={0.5}
-          onPress={() => router.replace("/notificacoes")}
-          accessible={true}
-          accessibilityRole="button"
-          accessibilityLabel="Aba Alertas"
-        >
+        <YStack ai="center" gap="$1" opacity={0.5} onPress={() => router.replace("/notificacoes")} accessible={true} accessibilityRole="button" accessibilityLabel="Aba Alertas">
           <Feather name="bell" size={24} color="white" />
-          <Text color="white" fontSize={10}>
-            Alertas
-          </Text>
+          <Text color="white" fontSize={10}>Alertas</Text>
         </YStack>
-        <YStack
-          ai="center"
-          gap="$1"
-          opacity={0.5}
-          onPress={() => router.replace("/carros")}
-          accessible={true}
-          accessibilityRole="button"
-          accessibilityLabel="Aba Carros"
-        >
-          <Ionicons name="car-sport-outline" size={26} color="white" />
-          <Text color="white" fontSize={10}>
-            Carros
-          </Text>
+        <YStack ai="center" gap="$1" opacity={1} onPress={() => router.replace("/carros")} accessible={true} accessibilityRole="button" accessibilityLabel="Aba atual: Carros">
+          <Ionicons name="car-sport" size={26} color="white" />
+          <Text color="white" fontSize={10}>Carros</Text>
+        </YStack>
+        <YStack ai="center" gap="$1" opacity={0.5} onPress={() => router.replace("/perfil")} accessible={true} accessibilityRole="button" accessibilityLabel="Aba Perfil">
+          <Feather name="user" size={24} color="white" />
+          <Text color="white" fontSize={10}>Perfil</Text>
         </YStack>
       </XStack>
     </SafeAreaView>
