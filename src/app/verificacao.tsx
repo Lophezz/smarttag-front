@@ -28,7 +28,7 @@ export default function Verificacao() {
 
     try {
       await api.post("/auth/verify", {
-        email: email,
+        email: email ? String(email).toLowerCase().trim() : "",
         code: codigo,
       });
 
@@ -61,7 +61,7 @@ export default function Verificacao() {
         contentContainerStyle={{ flexGrow: 1, justifyContent: "center" }}
       >
         <YStack f={1} jc="center" px="$6" py="$8" gap="$4">
-          <YStack mb="$6">
+          <YStack mb="$6" accessible={true} accessibilityRole="header">
             <Text fontSize="$9" fontWeight="800" color="white">
               Ativar Conta
             </Text>
@@ -72,8 +72,9 @@ export default function Verificacao() {
           </YStack>
 
           <YStack gap="$2">
-            <Label color="white">Código de Verificação</Label>
+            <Label color="white" htmlFor="codigo">Código de Verificação</Label>
             <Input
+              id="codigo"
               size="$5"
               placeholder="Ex: 329987"
               keyboardType="number-pad"
@@ -83,6 +84,7 @@ export default function Verificacao() {
               borderColor="$gray6"
               color="white"
               maxLength={6}
+              accessibilityLabel="Campo de entrada para o código numérico de ativação"
             />
           </YStack>
 
@@ -96,6 +98,9 @@ export default function Verificacao() {
             opacity={isLoading ? 0.7 : 1}
             onPress={handleVerificacao}
             icon={isLoading ? () => <Spinner color="white" /> : undefined}
+            accessibilityRole="button"
+            accessibilityLabel="Botão para ativar conta"
+            accessibilityHint="Toque para validar o código e ativar a sua conta"
           >
             {isLoading ? "Verificando..." : "Ativar Conta"}
           </Button>

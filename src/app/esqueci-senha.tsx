@@ -24,7 +24,7 @@ export default function EsqueciSenha() {
 
     try {
       await api.post("/auth/request-password", {
-        email: email,
+        email: email.toLowerCase().trim(),
       });
 
       Alert.alert(
@@ -34,7 +34,7 @@ export default function EsqueciSenha() {
 
       router.push({
         pathname: "/resetar-senha",
-        params: { email: email },
+        params: { email: email.toLowerCase().trim() },
       });
     } catch (error) {
       console.error("Erro ao solicitar recuperação:", error);
@@ -61,7 +61,7 @@ export default function EsqueciSenha() {
         contentContainerStyle={{ flexGrow: 1, justifyContent: "center" }}
       >
         <YStack f={1} jc="center" px="$6" py="$8" gap="$4">
-          <YStack mb="$6">
+          <YStack mb="$6" accessible={true} accessibilityRole="header">
             <Text fontSize="$9" fontWeight="800" color="white">
               Recuperar Senha
             </Text>
@@ -72,8 +72,9 @@ export default function EsqueciSenha() {
           </YStack>
 
           <YStack gap="$2">
-            <Label color="white">E-mail</Label>
+            <Label color="white" htmlFor="email">E-mail</Label>
             <Input
+              id="email"
               size="$5"
               placeholder="Digite seu e-mail"
               keyboardType="email-address"
@@ -83,6 +84,7 @@ export default function EsqueciSenha() {
               bg="#1E293B"
               borderColor="$gray6"
               color="white"
+              accessibilityLabel="Campo de entrada para o e-mail de recuperação"
             />
           </YStack>
 
@@ -97,6 +99,9 @@ export default function EsqueciSenha() {
             pressStyle={{ scale: 0.97, bg: "$blue9" }}
             onPress={handleSolicitarRecuperacao}
             icon={isLoading ? () => <Spinner color="white" /> : undefined}
+            accessibilityRole="button"
+            accessibilityLabel="Botão Enviar Código"
+            accessibilityHint="Toque para solicitar um código de recuperação no seu e-mail"
           >
             {isLoading ? "Enviando..." : "Enviar Código"}
           </Button>
@@ -107,6 +112,9 @@ export default function EsqueciSenha() {
               color="$orange10"
               fontWeight="700"
               onPress={() => router.back()}
+              accessibilityRole="link"
+              accessibilityLabel="Voltar ao Login"
+              accessibilityHint="Toque para retornar à tela de acesso"
             >
               Voltar ao Login
             </Text>

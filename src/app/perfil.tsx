@@ -228,6 +228,9 @@ export default function Perfil() {
           gap="$1"
           opacity={0.5}
           onPress={() => router.replace("/home")}
+          accessible={true}
+          accessibilityRole="button"
+          accessibilityLabel="Aba Home"
         >
           <Feather name="home" size={24} color="white" />
           <Text color="white" fontSize={10}>
@@ -237,8 +240,25 @@ export default function Perfil() {
         <YStack
           ai="center"
           gap="$1"
+          opacity={1}
+          onPress={() => router.replace("/mensagens")}
+          accessible={true}
+          accessibilityRole="button"
+          accessibilityLabel="Aba atual: Mensagens"
+        >
+          <Feather name="message-circle" size={24} color="white" />
+          <Text color="white" fontSize={10}>
+            Chats
+          </Text>
+        </YStack>
+        <YStack
+          ai="center"
+          gap="$1"
           opacity={0.5}
           onPress={() => router.replace("/notificacoes")}
+          accessible={true}
+          accessibilityRole="button"
+          accessibilityLabel="Aba Alertas"
         >
           <Feather name="bell" size={24} color="white" />
           <Text color="white" fontSize={10}>
@@ -250,21 +270,13 @@ export default function Perfil() {
           gap="$1"
           opacity={0.5}
           onPress={() => router.replace("/carros")}
+          accessible={true}
+          accessibilityRole="button"
+          accessibilityLabel="Aba Carros"
         >
           <Ionicons name="car-sport-outline" size={26} color="white" />
           <Text color="white" fontSize={10}>
             Carros
-          </Text>
-        </YStack>
-        <YStack
-          ai="center"
-          gap="$1"
-          opacity={1}
-          onPress={() => router.replace("/perfil")}
-        >
-          <Feather name="user" size={24} color="white" />
-          <Text color="white" fontSize={10}>
-            Perfil
           </Text>
         </YStack>
       </XStack>
