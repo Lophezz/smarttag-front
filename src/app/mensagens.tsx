@@ -80,7 +80,14 @@ export default function Mensagens() {
         accessible={true}
         accessibilityRole="header"
       >
-        <Text fontSize="$7" fontWeight="bold" color="white">
+        <Text
+          f={1}
+          fontSize="$7"
+          fontWeight="bold"
+          color="white"
+          numberOfLines={1}
+          adjustsFontSizeToFit
+        >
           Minhas Conversas
         </Text>
         <Feather
@@ -205,7 +212,7 @@ export default function Mensagens() {
         </ScrollView>
       )}
 
-      {/* BARRA DE NAVEGAÇÃO INFERIOR AJUSTADA */}
+      {/* BARRA DE NAVEGAÇÃO INFERIOR */}
       <XStack
         bg="#0F172A"
         pt="$3"
@@ -236,7 +243,7 @@ export default function Mensagens() {
           onPress={() => router.replace("/mensagens")}
           accessible={true}
           accessibilityRole="button"
-          accessibilityLabel="Aba atual: Mensagens"
+          accessibilityLabel="Aba atual: Chats"
         >
           <Feather name="message-circle" size={24} color="white" />
           <Text color="white" fontSize={10}>
@@ -266,7 +273,7 @@ export default function Mensagens() {
           accessibilityRole="button"
           accessibilityLabel="Aba Carros"
         >
-          <Ionicons name="car-sport-outline" size={26} color="white" />
+          <Ionicons name="car-sport" size={26} color="white" />
           <Text color="white" fontSize={10}>
             Carros
           </Text>

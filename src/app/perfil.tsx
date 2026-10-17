@@ -18,6 +18,8 @@ export default function Perfil() {
   const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   const [userId, setUserId] = useState("");
+  const [status, setStatus] = useState({ citizienStatus: "", pontos: 0 });
+
   const [formData, setFormData] = useState({
     nome: "",
     telefone: "",
@@ -35,6 +37,10 @@ export default function Perfil() {
     try {
       const response = await api.get("/auth/me");
       setUserId(response.data.id);
+      setStatus({
+        citizienStatus: response.data.citizienStatus || "NOVATO",
+        pontos: response.data.pontos || 0,
+      });
       setFormData({
         nome: response.data.nome || "",
         telefone: response.data.telefone || "",
@@ -72,7 +78,7 @@ export default function Perfil() {
   const confirmarExclusao = () => {
     Alert.alert(
       "Atenção: Excluir Conta",
-      "Esta ação é irreversível. Todos os seus dados serão apagados permanentemente. Deseja continuar?",
+      "Esta ação apagará permanentemente os seus dados, carros e histórico de mensagens. Deseja continuar?",
       [
         { text: "Cancelar", style: "cancel" },
         {
@@ -89,7 +95,10 @@ export default function Perfil() {
     setIsDeleting(true);
     try {
       await api.delete(`/auth/${userId}`);
-      Alert.alert("Conta Excluída", "A sua conta foi apagada com sucesso.");
+      Alert.alert(
+        "Conta Excluída",
+        "A sua conta e todos os dados associados foram apagados.",
+      );
       router.replace("/login");
     } catch (error) {
       console.error("Erro ao deletar:", error);
@@ -117,6 +126,11 @@ export default function Perfil() {
     );
   }
 
+  // Formata o texto do status para exibição
+  const statusFormatado = status.citizienStatus
+    .replace(/_/g, " ")
+    .toLowerCase();
+
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: "#0F172A" }}>
       <Stack.Screen options={{ headerShown: false }} />
@@ -124,20 +138,105 @@ export default function Perfil() {
         style={{ flex: 1 }}
         behavior={Platform.OS === "ios" ? "padding" : "height"}
       >
-        <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
-          <YStack f={1} px="$6" pt="$8" pb="$4" gap="$4">
-            <Text fontSize="$7" fontWeight="bold" color="white" mb="$2">
-              O Meu Perfil
-            </Text>
+        {/* CABEÇALHO COM BOTÃO VOLTAR */}
+        <XStack
+          px="$6"
+          pt="$8"
+          pb="$4"
+          ai="center"
+          gap="$4"
+          accessible={true}
+          accessibilityRole="header"
+        >
+          <Feather
+            name="arrow-left"
+            size={24}
+            color="#94A3B8"
+            onPress={() => router.replace("/home")}
+            accessible={true}
+            accessibilityRole="button"
+            accessibilityLabel="Voltar para a tela anterior"
+          />
+          <Text
+            f={1}
+            fontSize="$7"
+            fontWeight="bold"
+            color="white"
+            numberOfLines={1}
+            adjustsFontSizeToFit
+          >
+            O Meu Perfil
+          </Text>
+        </XStack>
 
-            <YStack gap="$2">
+        <ScrollView contentContainerStyle={{ flexGrow: 1, paddingBottom: 40 }}>
+          <YStack f={1} px="$6" gap="$4">
+            {/* PAINEL DE STATUS E PONTUAÇÃO */}
+            <XStack
+              bg="#1E293B"
+              br="$4"
+              p="$4"
+              jc="space-between"
+              ai="center"
+              borderWidth={1}
+              borderColor="#334155"
+            >
+              <YStack>
+                <Text color="#94A3B8" fontSize="$3">
+                  Status de Cidadão
+                </Text>
+                <Text
+                  color="$blue10"
+                  fontSize="$5"
+                  fontWeight="bold"
+                  textTransform="capitalize"
+                >
+                  {statusFormatado}
+                </Text>
+              </YStack>
+              <YStack ai="flex-end">
+                <Text color="#94A3B8" fontSize="$3">
+                  Pontuação
+                </Text>
+                <Text color="white" fontSize="$5" fontWeight="bold">
+                  {status.pontos} pts
+                </Text>
+              </YStack>
+            </XStack>
+
+            {/* AVISO DE CONTA EM RISCO */}
+            {status.citizienStatus === "CONTA_EM_RISCO" && (
+              <YStack
+                bg="rgba(239, 68, 68, 0.15)"
+                p="$4"
+                br="$4"
+                borderWidth={1}
+                borderColor="$red10"
+                accessible={true}
+                accessibilityRole="alert"
+              >
+                <XStack ai="center" gap="$2" mb="$2">
+                  <Feather name="alert-triangle" size={20} color="#EF4444" />
+                  <Text color="$red10" fontWeight="bold" fontSize="$4">
+                    Conta em Risco de Banimento
+                  </Text>
+                </XStack>
+                <Text color="#FCA5A5" fontSize="$3">
+                  Detetámos sucessivas avaliações negativas nos seus alertas. Se
+                  o seu comportamento violar os nossos Termos de Uso novamente,
+                  a sua conta será bloqueada permanentemente.
+                </Text>
+              </YStack>
+            )}
+
+            <YStack gap="$2" mt="$2">
               <Label color="white">Nome Completo</Label>
               <Input
                 value={formData.nome}
                 onChangeText={(text) =>
                   setFormData({ ...formData, nome: text })
                 }
-                bg="#1E293B"
+                bg="#0F172A"
                 color="white"
                 borderColor="$gray6"
               />
@@ -151,7 +250,7 @@ export default function Perfil() {
                   setFormData({ ...formData, telefone: text })
                 }
                 keyboardType="phone-pad"
-                bg="#1E293B"
+                bg="#0F172A"
                 color="white"
                 borderColor="$gray6"
               />
@@ -163,7 +262,7 @@ export default function Perfil() {
                 value={formData.cpf}
                 onChangeText={(text) => setFormData({ ...formData, cpf: text })}
                 keyboardType="numeric"
-                bg="#1E293B"
+                bg="#0F172A"
                 color="white"
                 borderColor="$gray6"
               />
@@ -212,74 +311,6 @@ export default function Perfil() {
           </YStack>
         </ScrollView>
       </KeyboardAvoidingView>
-
-      {/* BARRA DE NAVEGAÇÃO INFERIOR */}
-      <XStack
-        bg="#0F172A"
-        pt="$3"
-        pb="$5"
-        px="$6"
-        jc="space-between"
-        borderTopWidth={1}
-        borderTopColor="#1E293B"
-      >
-        <YStack
-          ai="center"
-          gap="$1"
-          opacity={0.5}
-          onPress={() => router.replace("/home")}
-          accessible={true}
-          accessibilityRole="button"
-          accessibilityLabel="Aba Home"
-        >
-          <Feather name="home" size={24} color="white" />
-          <Text color="white" fontSize={10}>
-            Home
-          </Text>
-        </YStack>
-        <YStack
-          ai="center"
-          gap="$1"
-          opacity={1}
-          onPress={() => router.replace("/mensagens")}
-          accessible={true}
-          accessibilityRole="button"
-          accessibilityLabel="Aba atual: Mensagens"
-        >
-          <Feather name="message-circle" size={24} color="white" />
-          <Text color="white" fontSize={10}>
-            Chats
-          </Text>
-        </YStack>
-        <YStack
-          ai="center"
-          gap="$1"
-          opacity={0.5}
-          onPress={() => router.replace("/notificacoes")}
-          accessible={true}
-          accessibilityRole="button"
-          accessibilityLabel="Aba Alertas"
-        >
-          <Feather name="bell" size={24} color="white" />
-          <Text color="white" fontSize={10}>
-            Alertas
-          </Text>
-        </YStack>
-        <YStack
-          ai="center"
-          gap="$1"
-          opacity={0.5}
-          onPress={() => router.replace("/carros")}
-          accessible={true}
-          accessibilityRole="button"
-          accessibilityLabel="Aba Carros"
-        >
-          <Ionicons name="car-sport-outline" size={26} color="white" />
-          <Text color="white" fontSize={10}>
-            Carros
-          </Text>
-        </YStack>
-      </XStack>
     </SafeAreaView>
   );
 }

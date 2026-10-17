@@ -8,6 +8,8 @@ import api from "../services/api";
 export default function Home() {
   const [isLoading, setIsLoading] = useState(true);
   const [historico, setHistorico] = useState<any[]>([]);
+  const [temAlertaPendente, setTemAlertaPendente] = useState(false);
+  const [temMensagemNaoLida, setTemMensagemNaoLida] = useState(false);
   const [usuario, setUsuario] = useState({
     nome: "",
     pontos: 0,
@@ -39,11 +41,14 @@ export default function Home() {
   const carregarDadosDaHome = async () => {
     setIsLoading(true);
     try {
-      // Fazemos as duas requisições simultaneamente para maior performance
-      const [resUsuario, resHistorico] = await Promise.all([
-        api.get("/auth/me"),
-        api.get("/auth/history"),
-      ]);
+      // Requisita tudo em paralelo: Usuário, Histórico, Alertas Pendentes e Chats
+      const [resUsuario, resHistorico, resAlertas, resMensagens] =
+        await Promise.all([
+          api.get("/auth/me"),
+          api.get("/auth/history"),
+          api.get("/auth/notify"),
+          api.get("/messages/minhas-conversas"),
+        ]);
 
       const dados = resUsuario.data;
       setUsuario({
@@ -52,14 +57,19 @@ export default function Home() {
         status: formatarStatus(dados.citizienStatus),
       });
 
-      // Ordena o histórico para exibir do mais recente para o mais antigo
       const histOrdenado = resHistorico.data.sort(
         (a: any, b: any) =>
           new Date(b.data).getTime() - new Date(a.data).getTime(),
       );
       setHistorico(histOrdenado);
 
-      // Pop-up para incentivar o preenchimento completo do perfil
+      // LÓGICA DAS BADGES (Bolinhas Vermelhas)
+      const alertas = resAlertas.data.content || resAlertas.data || [];
+      setTemAlertaPendente(alertas.length > 0);
+
+      const msgs = resMensagens.data || [];
+      setTemMensagemNaoLida(msgs.some((m: any) => m.lido === false));
+
       if (!dados.telefone || !dados.cpf) {
         Alert.alert(
           "Complete seu Cadastro",
@@ -88,7 +98,7 @@ export default function Home() {
         contentContainerStyle={{ flexGrow: 1 }}
       >
         <YStack f={1} px="$5" pt="$8" pb="$4" gap="$6">
-          {/* CABEÇALHO COM AVATAR */}
+          {/* CABEÇALHO */}
           <XStack
             ai="center"
             jc="space-between"
@@ -118,6 +128,7 @@ export default function Home() {
               )}
             </XStack>
 
+            {/* O ÚNICO ACESSO AO PERFIL AGORA É POR AQUI */}
             <Feather
               name="settings"
               size={24}
@@ -126,11 +137,10 @@ export default function Home() {
               accessible={true}
               accessibilityRole="button"
               accessibilityLabel="Configurações do perfil"
-              accessibilityHint="Tocar para ir à tela de edição de perfil"
             />
           </XStack>
 
-          {/* STATUS DE CIDADÃO (Agora com dados reais do banco) */}
+          {/* STATUS DE CIDADÃO */}
           <XStack
             bg="#1E293B"
             br="$4"
@@ -148,7 +158,7 @@ export default function Home() {
             </Text>
           </XStack>
 
-          {/* HISTÓRICO DE AÇÕES REAL */}
+          {/* HISTÓRICO DE AÇÕES */}
           <YStack gap="$3">
             <Text
               color="#94A3B8"
@@ -211,7 +221,7 @@ export default function Home() {
         </YStack>
       </ScrollView>
 
-      {/* BARRA DE NAVEGAÇÃO INFERIOR */}
+      {/* BARRA DE NAVEGAÇÃO INFERIOR PADRONIZADA COM BADGES */}
       <XStack
         bg="#0F172A"
         pt="$3"
@@ -221,34 +231,52 @@ export default function Home() {
         borderTopWidth={1}
         borderTopColor="#1E293B"
       >
+        {/* ABA 1: HOME */}
         <YStack
           ai="center"
           gap="$1"
-          opacity={0.5}
+          opacity={1}
           onPress={() => router.replace("/home")}
           accessible={true}
           accessibilityRole="button"
-          accessibilityLabel="Aba Home"
+          accessibilityLabel="Aba atual: Home"
         >
           <Feather name="home" size={24} color="white" />
           <Text color="white" fontSize={10}>
             Home
           </Text>
         </YStack>
+
+        {/* ABA 2: CHATS (COM BADGE) */}
         <YStack
           ai="center"
           gap="$1"
-          opacity={1}
+          opacity={0.5}
           onPress={() => router.replace("/mensagens")}
           accessible={true}
           accessibilityRole="button"
-          accessibilityLabel="Aba atual: Mensagens"
+          accessibilityLabel="Aba Chats"
         >
-          <Feather name="message-circle" size={24} color="white" />
+          <YStack>
+            <Feather name="message-circle" size={24} color="white" />
+            {temMensagemNaoLida && (
+              <YStack
+                position="absolute"
+                top={-2}
+                right={-4}
+                width={10}
+                height={10}
+                br={5}
+                bg="$red10"
+              />
+            )}
+          </YStack>
           <Text color="white" fontSize={10}>
             Chats
           </Text>
         </YStack>
+
+        {/* ABA 3: ALERTAS (COM BADGE) */}
         <YStack
           ai="center"
           gap="$1"
@@ -258,11 +286,26 @@ export default function Home() {
           accessibilityRole="button"
           accessibilityLabel="Aba Alertas"
         >
-          <Feather name="bell" size={24} color="white" />
+          <YStack>
+            <Feather name="bell" size={24} color="white" />
+            {temAlertaPendente && (
+              <YStack
+                position="absolute"
+                top={-2}
+                right={-2}
+                width={10}
+                height={10}
+                br={5}
+                bg="$red10"
+              />
+            )}
+          </YStack>
           <Text color="white" fontSize={10}>
             Alertas
           </Text>
         </YStack>
+
+        {/* ABA 4: CARROS */}
         <YStack
           ai="center"
           gap="$1"
@@ -272,7 +315,7 @@ export default function Home() {
           accessibilityRole="button"
           accessibilityLabel="Aba Carros"
         >
-          <Ionicons name="car-sport-outline" size={26} color="white" />
+          <Ionicons name="car-sport" size={26} color="white" />
           <Text color="white" fontSize={10}>
             Carros
           </Text>
