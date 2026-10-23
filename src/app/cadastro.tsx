@@ -25,7 +25,8 @@ export default function Cadastro() {
   const reqNumber = /[0-9]/.test(senha);
   const reqSpecial = /[@#$%^&+=!]/.test(senha);
 
-  const isPasswordValid = reqLength && reqUpper && reqLower && reqNumber && reqSpecial;
+  const isPasswordValid =
+    reqLength && reqUpper && reqLower && reqNumber && reqSpecial;
 
   const handleCadastro = async () => {
     if (!nome || !email || !senha) {
@@ -34,7 +35,10 @@ export default function Cadastro() {
     }
 
     if (!isPasswordValid) {
-      Alert.alert("Senha Fraca", "A sua senha não cumpre todos os requisitos de segurança.");
+      Alert.alert(
+        "Senha Fraca",
+        "A sua senha não cumpre todos os requisitos de segurança.",
+      );
       return;
     }
 
@@ -71,16 +75,28 @@ export default function Cadastro() {
     }
   };
 
-  const RequisitoSenha = ({ atende, texto }: { atende: boolean, texto: string }) => (
-    <XStack 
-      ai="center" 
-      gap="$2" 
-      mb="$1" 
-      accessible={true} 
-      accessibilityLabel={`Requisito de senha: ${texto}. ${atende ? 'Cumprido' : 'Não cumprido'}`}
+  const RequisitoSenha = ({
+    atende,
+    texto,
+  }: {
+    atende: boolean;
+    texto: string;
+  }) => (
+    <XStack
+      ai="center"
+      gap="$2"
+      mb="$1"
+      accessible={true}
+      accessibilityLabel={`Requisito de senha: ${texto}. ${atende ? "Cumprido" : "Não cumprido"}`}
     >
-      <Feather name={atende ? "check-circle" : "circle"} size={14} color={atende ? "#10B981" : "#64748B"} />
-      <Text color={atende ? "#10B981" : "#64748B"} fontSize="$3">{texto}</Text>
+      <Feather
+        name={atende ? "check-circle" : "circle"}
+        size={14}
+        color={atende ? "#10B981" : "#64748B"}
+      />
+      <Text color={atende ? "#10B981" : "#64748B"} fontSize="$3">
+        {texto}
+      </Text>
     </XStack>
   );
 
@@ -104,7 +120,9 @@ export default function Cadastro() {
           </YStack>
 
           <YStack gap="$2">
-            <Label color="white" htmlFor="nome">Nome Completo</Label>
+            <Label color="white" htmlFor="nome">
+              Nome Completo
+            </Label>
             <Input
               id="nome"
               size="$5"
@@ -120,7 +138,9 @@ export default function Cadastro() {
           </YStack>
 
           <YStack gap="$2">
-            <Label color="white" htmlFor="email">E-mail</Label>
+            <Label color="white" htmlFor="email">
+              E-mail
+            </Label>
             <Input
               id="email"
               size="$5"
@@ -137,8 +157,17 @@ export default function Cadastro() {
           </YStack>
 
           <YStack gap="$2">
-            <Label color="white" htmlFor="senha">Senha Segura</Label>
-            <XStack ai="center" bg="#1E293B" br="$4" borderWidth={1} borderColor="$gray6" pr="$3">
+            <Label color="white" htmlFor="senha">
+              Senha Segura
+            </Label>
+            <XStack
+              ai="center"
+              bg="#1E293B"
+              br="$4"
+              borderWidth={1}
+              borderColor="$gray6"
+              pr="$3"
+            >
               <Input
                 id="senha"
                 f={1}
@@ -152,24 +181,38 @@ export default function Cadastro() {
                 borderWidth={0}
                 accessibilityLabel="Campo de entrada para a senha"
               />
-              <Feather 
-                name={mostrarSenha ? "eye-off" : "eye"} 
-                size={20} 
-                color="#94A3B8" 
+              <Feather
+                name={mostrarSenha ? "eye-off" : "eye"}
+                size={20}
+                color="#94A3B8"
                 onPress={() => setMostrarSenha(!mostrarSenha)}
                 accessibilityRole="button"
-                accessibilityLabel={mostrarSenha ? "Ocultar senha" : "Mostrar senha"}
+                accessibilityLabel={
+                  mostrarSenha ? "Ocultar senha" : "Mostrar senha"
+                }
                 accessibilityHint="Alterna a visibilidade da senha digitada"
               />
             </XStack>
           </YStack>
 
-          <YStack bg="#0F172A" p="$3" br="$3" borderWidth={1} borderColor={isPasswordValid ? "#10B981" : "#334155"}>
-            <RequisitoSenha atende={reqLength} texto="Pelo menos 6 caracteres" />
+          <YStack
+            bg="#0F172A"
+            p="$3"
+            br="$3"
+            borderWidth={1}
+            borderColor={isPasswordValid ? "#10B981" : "#334155"}
+          >
+            <RequisitoSenha
+              atende={reqLength}
+              texto="Pelo menos 6 caracteres"
+            />
             <RequisitoSenha atende={reqUpper} texto="Uma letra maiúscula" />
             <RequisitoSenha atende={reqLower} texto="Uma letra minúscula" />
             <RequisitoSenha atende={reqNumber} texto="Um número" />
-            <RequisitoSenha atende={reqSpecial} texto="Um caractere especial (@#$%^&+=!)" />
+            <RequisitoSenha
+              atende={reqSpecial}
+              texto="Um caractere especial (@#$%^&+=!)"
+            />
           </YStack>
 
           <Button

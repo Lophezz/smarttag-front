@@ -72,7 +72,9 @@ export default function Verificacao() {
           </YStack>
 
           <YStack gap="$2">
-            <Label color="white" htmlFor="codigo">Código de Verificação</Label>
+            <Label color="white" htmlFor="codigo">
+              Código de Verificação
+            </Label>
             <Input
               id="codigo"
               size="$5"

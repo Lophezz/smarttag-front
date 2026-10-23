@@ -53,7 +53,12 @@ export default function Login() {
       <Stack.Screen options={{ headerShown: false }} />
       <YStack f={1} jc="center" px="$6" gap="$4">
         {/* Título com Acessibilidade */}
-        <YStack ai="center" mb="$6" accessible={true} accessibilityRole="header">
+        <YStack
+          ai="center"
+          mb="$6"
+          accessible={true}
+          accessibilityRole="header"
+        >
           <Text fontSize="$9" fontWeight="800" color="white">
             Smart<Text color="$blue10">Tag</Text>
           </Text>
@@ -102,7 +107,14 @@ export default function Login() {
           </XStack>
 
           {/* Input de Senha com Ícone */}
-          <XStack ai="center" bg="#1E293B" br="$4" borderWidth={1} borderColor="$gray6" pr="$3">
+          <XStack
+            ai="center"
+            bg="#1E293B"
+            br="$4"
+            borderWidth={1}
+            borderColor="$gray6"
+            pr="$3"
+          >
             <Input
               id="senha"
               f={1}
@@ -116,13 +128,15 @@ export default function Login() {
               borderWidth={0}
               accessibilityLabel="Campo de entrada para a senha"
             />
-            <Feather 
-              name={mostrarSenha ? "eye-off" : "eye"} 
-              size={20} 
-              color="#94A3B8" 
+            <Feather
+              name={mostrarSenha ? "eye-off" : "eye"}
+              size={20}
+              color="#94A3B8"
               onPress={() => setMostrarSenha(!mostrarSenha)}
               accessibilityRole="button"
-              accessibilityLabel={mostrarSenha ? "Ocultar senha" : "Mostrar senha"}
+              accessibilityLabel={
+                mostrarSenha ? "Ocultar senha" : "Mostrar senha"
+              }
             />
           </XStack>
         </YStack>

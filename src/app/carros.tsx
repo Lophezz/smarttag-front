@@ -1,13 +1,19 @@
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useRef } from "react";
 import {
-  SafeAreaView,
   ScrollView,
   Alert,
   Modal,
   Image,
   TouchableOpacity,
   Platform,
+  View,
 } from "react-native";
+import * as FileSystem from "expo-file-system/legacy";
+import * as Sharing from "expo-sharing";
+import {
+  SafeAreaView,
+  useSafeAreaInsets,
+} from "react-native-safe-area-context";
 import { YStack, XStack, Text, Button, Input, Spinner, Label } from "tamagui";
 import { Feather, Ionicons } from "@expo/vector-icons";
 import { router, useFocusEffect, Stack } from "expo-router";
@@ -16,6 +22,10 @@ import QRCode from "react-native-qrcode-svg";
 import api from "../services/api";
 
 export default function Carros() {
+  const [busca, setBusca] = useState("");
+  const qrHiResRef = useRef<any>(null);
+  const [isSavingQr, setIsSavingQr] = useState(false);
+  const insets = useSafeAreaInsets();
   const [carros, setCarros] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [modalVisible, setModalVisible] = useState(false);
@@ -240,6 +250,67 @@ export default function Carros() {
     );
   };
 
+  const baixarQrCode = async () => {
+    if (!qrCodeAmpliado || !qrHiResRef.current) return;
+
+    setIsSavingQr(true);
+    try {
+      // Gera o PNG em base64 a partir do QR de alta resolução
+      const base64: string = await new Promise((resolve, reject) => {
+        try {
+          qrHiResRef.current.toDataURL((data: string) => resolve(data));
+        } catch (e) {
+          reject(e);
+        }
+      });
+
+      // WEB: dispara o download direto no navegador
+      if (Platform.OS === "web") {
+        const link = document.createElement("a");
+        link.href = `data:image/png;base64,${base64}`;
+        link.download = "smarttag-qrcode.png";
+        link.click();
+        return;
+      }
+
+      // MOBILE: grava o arquivo e abre o menu de compartilhar/salvar
+      const fileUri = `${FileSystem.cacheDirectory}smarttag-qrcode-${Date.now()}.png`;
+      await FileSystem.writeAsStringAsync(fileUri, base64, {
+        encoding: FileSystem.EncodingType.Base64,
+      });
+
+      if (!(await Sharing.isAvailableAsync())) {
+        Alert.alert("Erro", "Compartilhamento indisponível neste dispositivo.");
+        return;
+      }
+
+      await Sharing.shareAsync(fileUri, {
+        mimeType: "image/png",
+        UTI: "public.png",
+        dialogTitle: "Salvar ou imprimir o QR Code",
+      });
+    } catch (error) {
+      console.error("Erro ao baixar QR Code:", error);
+      Alert.alert("Erro", "Não foi possível gerar o QR Code.");
+    } finally {
+      setIsSavingQr(false);
+    }
+  };
+
+  const normalizarPlaca = (texto: string) =>
+    (texto || "").replace(/[^a-zA-Z0-9]/g, "").toUpperCase();
+
+  const carrosFiltrados = carros.filter((carro) =>
+    normalizarPlaca(carro.placa).includes(normalizarPlaca(busca)),
+  );
+
+  useFocusEffect(
+    useCallback(() => {
+      setBusca("");
+      carregarCarros();
+    }, []),
+  );
+
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: "#0F172A" }}>
       <Stack.Screen options={{ headerShown: false }} />
@@ -275,6 +346,42 @@ export default function Carros() {
         />
       </XStack>
 
+      <XStack
+        mx="$6"
+        mb="$3"
+        px="$3"
+        ai="center"
+        gap="$2"
+        bg="#1E293B"
+        br="$4"
+        borderWidth={1}
+        borderColor="#334155"
+      >
+        <Feather name="search" size={18} color="#94A3B8" />
+        <Input
+          f={1}
+          unstyled
+          value={busca}
+          onChangeText={setBusca}
+          placeholder="Pesquisar por placa"
+          placeholderTextColor={"#64748B" as any}
+          color="white"
+          autoCapitalize="characters"
+          autoCorrect={false}
+          maxLength={8}
+          accessibilityLabel="Campo de pesquisa de carros por placa"
+        />
+        {busca.length > 0 && (
+          <TouchableOpacity
+            onPress={() => setBusca("")}
+            accessibilityRole="button"
+            accessibilityLabel="Limpar pesquisa"
+          >
+            <Feather name="x" size={18} color="#94A3B8" />
+          </TouchableOpacity>
+        )}
+      </XStack>
+
       {isLoading ? (
         <YStack f={1} jc="center" ai="center">
           <Spinner size="large" color="$blue10" />
@@ -296,8 +403,21 @@ export default function Carros() {
                 Nenhum carro cadastrado.
               </Text>
             </YStack>
+          ) : carrosFiltrados.length === 0 ? (
+            <YStack
+              ai="center"
+              mt="$10"
+              gap="$4"
+              accessible={true}
+              accessibilityLabel="Nenhum carro encontrado para esta placa"
+            >
+              <Feather name="search" size={48} color="#334155" />
+              <Text color="#94A3B8" fontSize="$4">
+                Nenhum carro encontrado para essa placa.
+              </Text>
+            </YStack>
           ) : (
-            carros.map((carro) => (
+            carrosFiltrados.map((carro) => (
               <YStack
                 key={carro.id}
                 bg="#1E293B"
@@ -473,9 +593,30 @@ export default function Carros() {
               Qualquer pessoa pode apontar a câmera para este código para lhe
               enviar alertas anônimos.
             </Text>
+
             <Button
               size="$4"
               mt="$2"
+              width="100%"
+              bg="#10B981"
+              color="white"
+              disabled={isSavingQr}
+              icon={
+                isSavingQr ? (
+                  () => <Spinner color="white" />
+                ) : (
+                  <Feather name="download" size={18} color="white" />
+                )
+              }
+              onPress={baixarQrCode}
+              accessibilityRole="button"
+              accessibilityLabel="Baixar QR Code como imagem para imprimir"
+            >
+              {isSavingQr ? "Salvando..." : "Baixar para imprimir"}
+            </Button>
+
+            <Button
+              size="$4"
               width="100%"
               bg="$blue10"
               color="white"
@@ -486,6 +627,23 @@ export default function Carros() {
               Fechar
             </Button>
           </YStack>
+
+          {/* QR INVISÍVEL EM ALTA RESOLUÇÃO, usado só para gerar a imagem de impressão */}
+          {qrCodeAmpliado && (
+            <View
+              pointerEvents="none"
+              style={{ position: "absolute", left: -5000, top: 0 }}
+            >
+              <QRCode
+                value={`https://smarttag-front.vercel.app/alerta/${qrCodeAmpliado}`}
+                size={1000}
+                quietZone={60}
+                backgroundColor="white"
+                color="black"
+                getRef={(c) => (qrHiResRef.current = c)}
+              />
+            </View>
+          )}
         </YStack>
       </Modal>
 
@@ -619,7 +777,7 @@ export default function Carros() {
       <XStack
         bg="#0F172A"
         pt="$3"
-        pb="$5"
+        pb={Math.max(insets.bottom, 20)}
         px="$6"
         jc="space-between"
         borderTopWidth={1}

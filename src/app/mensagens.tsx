@@ -1,17 +1,13 @@
 import React, { useState, useCallback } from "react";
-import {
-  SafeAreaView,
-  ScrollView,
-  Alert,
-  Image,
-  TouchableOpacity,
-} from "react-native";
+import { ScrollView, Alert, Image, TouchableOpacity } from "react-native";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { YStack, XStack, Text, Spinner } from "tamagui";
 import { Feather, Ionicons } from "@expo/vector-icons";
 import { router, useFocusEffect, Stack } from "expo-router";
 import api from "../services/api";
 
 export default function Mensagens() {
+  const insets = useSafeAreaInsets();
   const [conversas, setConversas] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -216,7 +212,7 @@ export default function Mensagens() {
       <XStack
         bg="#0F172A"
         pt="$3"
-        pb="$5"
+        pb={Math.max(insets.bottom, 20)}
         px="$6"
         jc="space-between"
         borderTopWidth={1}

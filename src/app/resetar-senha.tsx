@@ -26,7 +26,8 @@ export default function ResetarSenha() {
   const reqNumber = /[0-9]/.test(novaSenha);
   const reqSpecial = /[@#$%^&+=!]/.test(novaSenha);
 
-  const isPasswordValid = reqLength && reqUpper && reqLower && reqNumber && reqSpecial;
+  const isPasswordValid =
+    reqLength && reqUpper && reqLower && reqNumber && reqSpecial;
 
   const handleResetarSenha = async () => {
     if (!codigo || !novaSenha) {
@@ -35,7 +36,10 @@ export default function ResetarSenha() {
     }
 
     if (!isPasswordValid) {
-      Alert.alert("Senha Fraca", "A sua nova senha não cumpre todos os requisitos de segurança.");
+      Alert.alert(
+        "Senha Fraca",
+        "A sua nova senha não cumpre todos os requisitos de segurança.",
+      );
       return;
     }
 
@@ -69,10 +73,28 @@ export default function ResetarSenha() {
   };
 
   // Componente visual para cada requisito da senha
-  const RequisitoSenha = ({ atende, texto }: { atende: boolean, texto: string }) => (
-    <XStack ai="center" gap="$2" mb="$1" accessible={true} accessibilityLabel={`Requisito de senha: ${texto}. ${atende ? 'Cumprido' : 'Não cumprido'}`}>
-      <Feather name={atende ? "check-circle" : "circle"} size={14} color={atende ? "#10B981" : "#64748B"} />
-      <Text color={atende ? "#10B981" : "#64748B"} fontSize="$3">{texto}</Text>
+  const RequisitoSenha = ({
+    atende,
+    texto,
+  }: {
+    atende: boolean;
+    texto: string;
+  }) => (
+    <XStack
+      ai="center"
+      gap="$2"
+      mb="$1"
+      accessible={true}
+      accessibilityLabel={`Requisito de senha: ${texto}. ${atende ? "Cumprido" : "Não cumprido"}`}
+    >
+      <Feather
+        name={atende ? "check-circle" : "circle"}
+        size={14}
+        color={atende ? "#10B981" : "#64748B"}
+      />
+      <Text color={atende ? "#10B981" : "#64748B"} fontSize="$3">
+        {texto}
+      </Text>
     </XStack>
   );
 
@@ -97,7 +119,9 @@ export default function ResetarSenha() {
           </YStack>
 
           <YStack gap="$2">
-            <Label color="white" htmlFor="codigo">Código de Recuperação</Label>
+            <Label color="white" htmlFor="codigo">
+              Código de Recuperação
+            </Label>
             <Input
               id="codigo"
               size="$5"
@@ -113,8 +137,17 @@ export default function ResetarSenha() {
           </YStack>
 
           <YStack gap="$2">
-            <Label color="white" htmlFor="nova-senha">Nova Senha</Label>
-            <XStack ai="center" bg="#1E293B" br="$4" borderWidth={1} borderColor="$gray6" pr="$3">
+            <Label color="white" htmlFor="nova-senha">
+              Nova Senha
+            </Label>
+            <XStack
+              ai="center"
+              bg="#1E293B"
+              br="$4"
+              borderWidth={1}
+              borderColor="$gray6"
+              pr="$3"
+            >
               <Input
                 id="nova-senha"
                 f={1}
@@ -128,25 +161,39 @@ export default function ResetarSenha() {
                 borderWidth={0}
                 accessibilityLabel="Campo para criar a nova senha"
               />
-              <Feather 
-                name={mostrarSenha ? "eye-off" : "eye"} 
-                size={20} 
-                color="#94A3B8" 
+              <Feather
+                name={mostrarSenha ? "eye-off" : "eye"}
+                size={20}
+                color="#94A3B8"
                 onPress={() => setMostrarSenha(!mostrarSenha)}
                 accessibilityRole="button"
-                accessibilityLabel={mostrarSenha ? "Ocultar senha" : "Mostrar senha"}
+                accessibilityLabel={
+                  mostrarSenha ? "Ocultar senha" : "Mostrar senha"
+                }
                 accessibilityHint="Alterna a visibilidade da nova senha digitada"
               />
             </XStack>
           </YStack>
 
           {/* Checklist Visual de Segurança da Senha */}
-          <YStack bg="#0F172A" p="$3" br="$3" borderWidth={1} borderColor={isPasswordValid ? "#10B981" : "#334155"}>
-            <RequisitoSenha atende={reqLength} texto="Pelo menos 6 caracteres" />
+          <YStack
+            bg="#0F172A"
+            p="$3"
+            br="$3"
+            borderWidth={1}
+            borderColor={isPasswordValid ? "#10B981" : "#334155"}
+          >
+            <RequisitoSenha
+              atende={reqLength}
+              texto="Pelo menos 6 caracteres"
+            />
             <RequisitoSenha atende={reqUpper} texto="Uma letra maiúscula" />
             <RequisitoSenha atende={reqLower} texto="Uma letra minúscula" />
             <RequisitoSenha atende={reqNumber} texto="Um número" />
-            <RequisitoSenha atende={reqSpecial} texto="Um caractere especial (@#$%^&+=!)" />
+            <RequisitoSenha
+              atende={reqSpecial}
+              texto="Um caractere especial (@#$%^&+=!)"
+            />
           </YStack>
 
           <Button

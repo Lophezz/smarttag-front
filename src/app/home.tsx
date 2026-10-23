@@ -1,11 +1,13 @@
 import React, { useState, useCallback } from "react";
-import { SafeAreaView, ScrollView, Alert } from "react-native";
-import { YStack, XStack, Text, Avatar, Spinner } from "tamagui";
+import { ScrollView, Alert } from "react-native";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
+import { YStack, XStack, Text, Avatar, Spinner, Button } from "tamagui";
 import { Feather, Ionicons } from "@expo/vector-icons";
 import { router, useFocusEffect, Stack } from "expo-router";
 import api from "../services/api";
 
 export default function Home() {
+  const insets = useSafeAreaInsets();
   const [isLoading, setIsLoading] = useState(true);
   const [historico, setHistorico] = useState<any[]>([]);
   const [temAlertaPendente, setTemAlertaPendente] = useState(false);
@@ -128,7 +130,7 @@ export default function Home() {
               )}
             </XStack>
 
-            {/* O ÚNICO ACESSO AO PERFIL AGORA É POR AQUI */}
+            {/* ACESSO AO PERFIL */}
             <Feather
               name="settings"
               size={24}
@@ -157,6 +159,27 @@ export default function Home() {
               <Text color="white">{usuario.pontos} pontos</Text>
             </Text>
           </XStack>
+
+          {/* BOTÃO DE LER QR CODE */}
+          <YStack mt="$2" mb="$2">
+            <Button
+              size="$5"
+              bg="$orange10"
+              color="white"
+              fontWeight="700"
+              icon={<Ionicons name="qr-code-outline" size={24} color="white" />}
+              onPress={() => router.replace("/scanner")}
+              accessible={true}
+              accessibilityRole="button"
+              accessibilityLabel="Escanear QR Code. Abra a câmera para notificar um veículo e ganhar pontos."
+            >
+              Escanear Veículo
+            </Button>
+            <Text color="#94A3B8" fontSize={12} textAlign="center" mt="$2">
+              Leia o QR Code de outros carros para enviar alertas e ganhar
+              pontos de cidadão!
+            </Text>
+          </YStack>
 
           {/* HISTÓRICO DE AÇÕES */}
           <YStack gap="$3">
@@ -225,7 +248,7 @@ export default function Home() {
       <XStack
         bg="#0F172A"
         pt="$3"
-        pb="$5"
+        pb={Math.max(insets.bottom, 20)}
         px="$6"
         jc="space-between"
         borderTopWidth={1}

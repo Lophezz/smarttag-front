@@ -1,28 +1,50 @@
-import 'react-native-url-polyfill/auto';
+import "react-native-url-polyfill/auto";
 // Polyfill necessário para o StompJS funcionar no React Native
-import * as encoding from 'text-encoding';
-if (typeof globalThis.TextEncoder === 'undefined') {
+import * as encoding from "text-encoding";
+
+// Injeção global forçada para que o Android não falhe na codificação das mensagens
+if (typeof global.TextEncoder === "undefined") {
+  global.TextEncoder = encoding.TextEncoder;
+}
+if (typeof globalThis.TextEncoder === "undefined") {
   (globalThis as any).TextEncoder = encoding.TextEncoder;
   (globalThis as any).TextDecoder = encoding.TextDecoder;
 }
+if (
+  typeof window !== "undefined" &&
+  typeof window.TextEncoder === "undefined"
+) {
+  window.TextEncoder = encoding.TextEncoder;
+}
 
-import React, { useState, useEffect, useRef } from 'react';
-import { SafeAreaView, KeyboardAvoidingView, Platform, ScrollView, Alert, Keyboard } from 'react-native';
-import { YStack, XStack, Text, Input, Button, Spinner } from 'tamagui';
-import { Feather } from '@expo/vector-icons';
-import { useLocalSearchParams, router, Stack } from 'expo-router';
-import { Client } from '@stomp/stompjs';
-import api from '../../services/api';
+import React, { useState, useEffect, useRef } from "react";
+import {
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  Alert,
+  Keyboard,
+} from "react-native";
+import {
+  SafeAreaView,
+  useSafeAreaInsets,
+} from "react-native-safe-area-context";
+import { YStack, XStack, Text, Input, Button, Spinner } from "tamagui";
+import { Feather } from "@expo/vector-icons";
+import { useLocalSearchParams, router, Stack } from "expo-router";
+import { Client } from "@stomp/stompjs";
+import api from "../../services/api";
 
 export default function Chat() {
-  // EXTRAÍMOS O 'isAnonimo' AQUI:
-  const { sessionId, qrcode, modelo, placa, isAnonimo } = useLocalSearchParams();
-  
+  const insets = useSafeAreaInsets();
+  const { sessionId, qrcode, modelo, placa, isAnonimo } =
+    useLocalSearchParams();
+
   const [mensagens, setMensagens] = useState<any[]>([]);
-  const [inputText, setInputText] = useState('');
+  const [inputText, setInputText] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [isConnected, setIsConnected] = useState(false);
-  
+
   const scrollViewRef = useRef<ScrollView>(null);
   const stompClientRef = useRef<Client | null>(null);
 
@@ -31,7 +53,6 @@ export default function Chat() {
     conectarWebSocket();
 
     return () => {
-      // Limpa a conexão WebSocket quando o utilizador sai do ecrã
       if (stompClientRef.current) {
         stompClientRef.current.deactivate();
       }
@@ -44,23 +65,29 @@ export default function Chat() {
       setMensagens(response.data);
       scrollParaOFinal();
     } catch (error) {
-      console.error('Erro ao carregar histórico:', error);
-      Alert.alert('Erro', 'Não foi possível carregar as mensagens antigas.');
+      console.error("Erro ao carregar histórico:", error);
+      Alert.alert("Erro", "Não foi possível carregar as mensagens antigas.");
     } finally {
       setIsLoading(false);
     }
   };
 
   const conectarWebSocket = () => {
-    // Transforma a URL da API (http:// ou https://) em ws:// ou wss://
-    const baseURL = api.defaults.baseURL || 'http://localhost:8080';
-    const wsURL = baseURL.replace(/^http/, 'ws') + '/ws';
+    // 1. Usar a URL diretamente, sem Axios, para não haver interferências
+    const wsURL = "wss://smarttag-6bea18f8625e.herokuapp.com/ws";
 
     const client = new Client({
       brokerURL: wsURL,
-      connectHeaders: {},
+      // 2. TENTAR FORÇAR AS ORIGENS PARA BURLAR O CORS
+      connectHeaders: {
+        Origin: "https://smarttag-front.vercel.app",
+      },
+      // 3. ESSENCIAL PARA O REACT NATIVE NO ANDROID:
+      forceBinaryWSFrames: true,
+      appendMissingNULLonIncoming: true,
+
       debug: function (str) {
-        console.log('[STOMP]', str);
+        console.log("[STOMP]", str); // <-- VER SE ISTO É LOGADO AGORA
       },
       reconnectDelay: 5000,
       heartbeatIncoming: 4000,
@@ -68,9 +95,9 @@ export default function Chat() {
     });
 
     client.onConnect = () => {
+      console.log("[STOMP] CONECTADO COM SUCESSO!");
       setIsConnected(true);
-      
-      // Inscreve-se no canal de respostas do dono
+
       client.subscribe(`/queue/anonimo/${sessionId}`, (message) => {
         if (message.body) {
           const novaMsg = JSON.parse(message.body);
@@ -78,8 +105,7 @@ export default function Chat() {
         }
       });
 
-      // Inscreve-se no canal de alertas (onde caem as mensagens do anônimo)
-      client.subscribe('/user/queue/alertas', (message) => {
+      client.subscribe("/user/queue/alertas", (message) => {
         if (message.body) {
           const novaMsg = JSON.parse(message.body);
           if (novaMsg.idSessao === sessionId || novaMsg.notifyId) {
@@ -90,8 +116,17 @@ export default function Chat() {
     };
 
     client.onStompError = (frame) => {
-      console.error('Erro no Broker:', frame.headers['message']);
-      console.error('Detalhes:', frame.body);
+      console.error("Erro no Broker:", frame.headers["message"]);
+      console.error("Detalhes:", frame.body);
+    };
+
+    client.onWebSocketClose = (evt) => {
+      console.log(
+        "[STOMP] LIGAÇÃO FECHADA CÓDIGO:",
+        evt.code,
+        " RAZÃO:",
+        evt.reason,
+      );
     };
 
     client.activate();
@@ -100,7 +135,10 @@ export default function Chat() {
 
   const adicionarMensagem = (novaMsg: any) => {
     setMensagens((prev) => {
-      const existe = prev.some(m => m.dataHora === novaMsg.dataHora && m.conteudo === novaMsg.conteudo);
+      const existe = prev.some(
+        (m) =>
+          m.dataHora === novaMsg.dataHora && m.conteudo === novaMsg.conteudo,
+      );
       if (existe) return prev;
       return [...prev, novaMsg];
     });
@@ -110,23 +148,35 @@ export default function Chat() {
   const enviarMensagem = () => {
     if (!inputText.trim() || !stompClientRef.current?.connected) return;
 
-    const payload = {
+    // 1. Cria a mensagem no formato exato que a API usa
+    const novaMensagemLocal = {
       conteudo: inputText.trim(),
       idSessao: sessionId,
-      qrcode: qrcode
+      qrcode: qrcode,
+      remetente: isAnonimo === "true" ? "Anônimo" : "Dono do carro",
+      dataHora: new Date().toISOString(), // Grava a hora atual
     };
 
     try {
+      // 2. ADICIONA À TELA IMEDIATAMENTE (Atualização Otimista)
+      adicionarMensagem(novaMensagemLocal);
+
+      // 3. Limpa o input e fecha o teclado
+      setInputText("");
+      Keyboard.dismiss();
+
+      // 4. Manda para o servidor silenciosamente em background
       stompClientRef.current.publish({
         destination: `/app/chat/${qrcode}`,
-        body: JSON.stringify(payload),
+        body: JSON.stringify({
+          conteudo: novaMensagemLocal.conteudo,
+          idSessao: novaMensagemLocal.idSessao,
+          qrcode: novaMensagemLocal.qrcode,
+        }),
       });
-
-      setInputText('');
-      Keyboard.dismiss();
     } catch (error) {
-      console.error('Erro ao enviar:', error);
-      Alert.alert('Erro', 'A sua mensagem não foi enviada. Tente novamente.');
+      console.error("Erro ao enviar:", error);
+      Alert.alert("Erro", "A sua mensagem não foi enviada. Tente novamente.");
     }
   };
 
@@ -137,21 +187,57 @@ export default function Chat() {
   };
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: '#0F172A' }}>
+    <SafeAreaView
+      style={{ flex: 1, backgroundColor: "#0F172A", paddingTop: 0 }}
+    >
       <Stack.Screen options={{ headerShown: false }} />
-      
-      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
-        
+
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        keyboardVerticalOffset={Platform.OS === "ios" ? 90 : 25}
+      >
         {/* CABEÇALHO DO CHAT */}
-        <XStack bg="#1E293B" px="$4" py="$4" ai="center" borderBottomWidth={1} borderBottomColor="#334155" accessible={true} accessibilityRole="header">
-          <Feather name="arrow-left" size={24} color="#94A3B8" onPress={() => router.back()} accessibilityRole="button" accessibilityLabel="Voltar" />
+        <XStack
+          bg="#1E293B"
+          px="$4"
+          pt={Math.max(insets.top, 16)}
+          pb="$4"
+          ai="center"
+          borderBottomWidth={1}
+          borderBottomColor="#334155"
+          accessible={true}
+          accessibilityRole="header"
+        >
+          <Feather
+            name="arrow-left"
+            size={24}
+            color="#94A3B8"
+            onPress={() => router.back()}
+            accessibilityRole="button"
+            accessibilityLabel="Voltar"
+          />
           <YStack f={1} ml="$4">
-            <Text color="white" fontSize="$5" fontWeight="bold" numberOfLines={1}>{modelo}</Text>
+            <Text
+              color="white"
+              fontSize="$5"
+              fontWeight="bold"
+              numberOfLines={1}
+            >
+              {modelo}
+            </Text>
             <XStack ai="center" gap="$2">
-              <Text color="#94A3B8" fontSize="$3">{placa}</Text>
-              <YStack width={8} height={8} br={4} bg={isConnected ? "#10B981" : "#EF4444"} />
+              <Text color="#94A3B8" fontSize="$3">
+                {placa}
+              </Text>
+              <YStack
+                width={8}
+                height={8}
+                br={4}
+                bg={isConnected ? "#10B981" : "#EF4444"}
+              />
               <Text color={isConnected ? "#10B981" : "#EF4444"} fontSize={10}>
-                {isConnected ? 'Online' : 'Conectando...'}
+                {isConnected ? "Online" : "Conectando..."}
               </Text>
             </XStack>
           </YStack>
@@ -161,39 +247,65 @@ export default function Chat() {
         {isLoading ? (
           <YStack f={1} jc="center" ai="center">
             <Spinner size="large" color="$blue10" />
-            <Text color="#94A3B8" mt="$4">A carregar conversa...</Text>
+            <Text color="#94A3B8" mt="$4">
+              A carregar conversa...
+            </Text>
           </YStack>
         ) : (
-          <ScrollView 
+          <ScrollView
             ref={scrollViewRef}
-            contentContainerStyle={{ padding: 16, flexGrow: 1, justifyContent: 'flex-end' }}
+            contentContainerStyle={{
+              padding: 16,
+              flexGrow: 1,
+              justifyContent: "flex-end",
+            }}
             onContentSizeChange={scrollParaOFinal}
           >
             {mensagens.map((msg, index) => {
-              
-              // LÓGICA ATUALIZADA AQUI:
-              // Se for o anônimo (isAnonimo === 'true'), a mensagem é "minha" se NÃO for do 'Dono do carro'.
-              // Se for o dono (isAnonimo !== 'true'), a mensagem é "minha" se for do 'Dono do carro'.
-              const isMinha = isAnonimo === 'true' 
-                ? msg.remetente !== 'Dono do carro' 
-                : msg.remetente === 'Dono do carro';
+              const isMinha =
+                isAnonimo === "true"
+                  ? msg.remetente !== "Dono do carro"
+                  : msg.remetente === "Dono do carro";
 
               return (
-                <XStack key={index} jc={isMinha ? 'flex-end' : 'flex-start'} mb="$3" accessible={true} accessibilityLabel={`Mensagem de ${msg.remetente}: ${msg.conteudo}`}>
-                  <YStack 
-                    maxWidth="80%" 
-                    bg={isMinha ? "$blue10" : "#1E293B"} 
-                    p="$3" 
+                <XStack
+                  key={index}
+                  jc={isMinha ? "flex-end" : "flex-start"}
+                  mb="$3"
+                  accessible={true}
+                  accessibilityLabel={`Mensagem de ${msg.remetente}: ${msg.conteudo}`}
+                >
+                  <YStack
+                    maxWidth="80%"
+                    bg={isMinha ? "$blue10" : "#1E293B"}
+                    p="$3"
                     br="$4"
-                    borderBottomRightRadius={isMinha ? 0 : '$4'}
-                    borderBottomLeftRadius={isMinha ? '$4' : 0}
+                    borderBottomRightRadius={isMinha ? 0 : "$4"}
+                    borderBottomLeftRadius={isMinha ? "$4" : 0}
                   >
                     {!isMinha && (
-                      <Text color="#94A3B8" fontSize={10} mb="$1" fontWeight="bold">{msg.remetente}</Text>
+                      <Text
+                        color="#94A3B8"
+                        fontSize={10}
+                        mb="$1"
+                        fontWeight="bold"
+                      >
+                        {msg.remetente}
+                      </Text>
                     )}
-                    <Text color="white" fontSize="$4">{msg.conteudo}</Text>
-                    <Text color={isMinha ? "rgba(255,255,255,0.7)" : "#64748B"} fontSize={10} mt="$1" ta={isMinha ? "right" : "left"}>
-                      {new Date(msg.dataHora || msg.data).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                    <Text color="white" fontSize="$4">
+                      {msg.conteudo}
+                    </Text>
+                    <Text
+                      color={isMinha ? "rgba(255,255,255,0.7)" : "#64748B"}
+                      fontSize={10}
+                      mt="$1"
+                      ta={isMinha ? "right" : "left"}
+                    >
+                      {new Date(msg.dataHora || msg.data).toLocaleTimeString(
+                        "pt-BR",
+                        { hour: "2-digit", minute: "2-digit" },
+                      )}
                     </Text>
                   </YStack>
                 </XStack>
@@ -203,7 +315,16 @@ export default function Chat() {
         )}
 
         {/* BARRA DE INPUT DE MENSAGEM */}
-        <XStack bg="#1E293B" p="$3" ai="center" gap="$3" borderTopWidth={1} borderTopColor="#334155">
+        <XStack
+          bg="#1E293B"
+          pt="$3"
+          px="$3"
+          pb={Math.max(insets.bottom, 12)}
+          ai="center"
+          gap="$3"
+          borderTopWidth={1}
+          borderTopColor="#334155"
+        >
           <Input
             f={1}
             value={inputText}
@@ -217,19 +338,22 @@ export default function Chat() {
             disabled={!isConnected}
             accessibilityLabel="Escreva uma mensagem"
           />
-          <Button 
-            size="$4" 
-            circular 
+          <Button
+            size="$4"
+            circular
             bg={inputText.trim() ? "$blue10" : "#334155"}
             disabled={!inputText.trim() || !isConnected}
             onPress={enviarMensagem}
             accessibilityRole="button"
             accessibilityLabel="Enviar mensagem"
           >
-            <Feather name="send" size={20} color={inputText.trim() ? "white" : "#94A3B8"} />
+            <Feather
+              name="send"
+              size={20}
+              color={inputText.trim() ? "white" : "#94A3B8"}
+            />
           </Button>
         </XStack>
-
       </KeyboardAvoidingView>
     </SafeAreaView>
   );

@@ -72,7 +72,9 @@ export default function EsqueciSenha() {
           </YStack>
 
           <YStack gap="$2">
-            <Label color="white" htmlFor="email">E-mail</Label>
+            <Label color="white" htmlFor="email">
+              E-mail
+            </Label>
             <Input
               id="email"
               size="$5"
