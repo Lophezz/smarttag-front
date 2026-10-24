@@ -1,5 +1,6 @@
 import React, { useState, useCallback } from "react";
-import { ScrollView, Alert } from "react-native";
+import { ScrollView } from "react-native";
+import { Alert } from "../services/alert";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { YStack, XStack, Text, Avatar, Spinner, Button } from "tamagui";
 import { Feather, Ionicons } from "@expo/vector-icons";
@@ -85,8 +86,13 @@ export default function Home() {
           ],
         );
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Erro ao carregar home:", error);
+      const status = error?.response?.status;
+      if (status === 401 || status === 403 || !error?.response) {
+        router.replace("/login");
+        return;
+      }
     } finally {
       setIsLoading(false);
     }

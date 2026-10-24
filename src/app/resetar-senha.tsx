@@ -1,10 +1,6 @@
 import React, { useState } from "react";
-import {
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
-  Alert,
-} from "react-native";
+import { KeyboardAvoidingView, Platform, ScrollView } from "react-native";
+import { Alert } from "../services/alert";
 import { useLocalSearchParams, router, Stack } from "expo-router";
 import { YStack, Text, Input, Button, Label, XStack, Spinner } from "tamagui";
 import { Feather } from "@expo/vector-icons";

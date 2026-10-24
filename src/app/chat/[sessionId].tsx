@@ -22,9 +22,9 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
-  Alert,
   Keyboard,
 } from "react-native";
+import { Alert } from "../../services/alert";
 import {
   SafeAreaView,
   useSafeAreaInsets,
@@ -64,9 +64,12 @@ export default function Chat() {
       const response = await api.get(`/messages/history/${sessionId}`);
       setMensagens(response.data);
       scrollParaOFinal();
-    } catch (error) {
-      console.error("Erro ao carregar histórico:", error);
-      Alert.alert("Erro", "Não foi possível carregar as mensagens antigas.");
+    } catch (error: any) {
+      const status = error?.response?.status;
+      if (status !== 401 && status !== 403) {
+        console.error("Erro ao carregar histórico:", error);
+        Alert.alert("Erro", "Não foi possível carregar as mensagens antigas.");
+      }
     } finally {
       setIsLoading(false);
     }
@@ -78,10 +81,6 @@ export default function Chat() {
 
     const client = new Client({
       brokerURL: wsURL,
-      // 2. TENTAR FORÇAR AS ORIGENS PARA BURLAR O CORS
-      connectHeaders: {
-        Origin: "https://smarttag-front.vercel.app",
-      },
       // 3. ESSENCIAL PARA O REACT NATIVE NO ANDROID:
       forceBinaryWSFrames: true,
       appendMissingNULLonIncoming: true,
@@ -120,7 +119,13 @@ export default function Chat() {
       console.error("Detalhes:", frame.body);
     };
 
+    client.onWebSocketError = (evt) => {
+      console.error("[STOMP] ERRO NO WEBSOCKET:", evt);
+      setIsConnected(false);
+    };
+
     client.onWebSocketClose = (evt) => {
+      setIsConnected(false);
       console.log(
         "[STOMP] LIGAÇÃO FECHADA CÓDIGO:",
         evt.code,

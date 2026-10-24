@@ -1,13 +1,6 @@
 import React, { useState, useCallback, useRef } from "react";
-import {
-  ScrollView,
-  Alert,
-  Modal,
-  Image,
-  TouchableOpacity,
-  Platform,
-  View,
-} from "react-native";
+import { ScrollView, Modal, Image, TouchableOpacity, Platform, View } from "react-native";
+import { Alert } from "../services/alert";
 import * as FileSystem from "expo-file-system/legacy";
 import * as Sharing from "expo-sharing";
 import {
@@ -20,6 +13,7 @@ import { router, useFocusEffect, Stack } from "expo-router";
 import * as ImagePicker from "expo-image-picker";
 import QRCode from "react-native-qrcode-svg";
 import api from "../services/api";
+import * as ImageManipulator from "expo-image-manipulator";
 
 export default function Carros() {
   const [busca, setBusca] = useState("");
@@ -63,18 +57,29 @@ export default function Carros() {
     }
   };
 
-  const selecionarImagem = async () => {
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: "images",
-      allowsEditing: true,
-      aspect: [4, 3],
-      quality: 0.8,
-    });
+const selecionarImagem = async () => {
+  const result = await ImagePicker.launchImageLibraryAsync({
+    mediaTypes: "images",
+    allowsEditing: true,
+    aspect: [4, 3],
+    quality: 0.8,
+  });
 
-    if (!result.canceled) {
-      setFormData({ ...formData, imagem: result.assets[0] });
+  if (!result.canceled) {
+    const asset = result.assets[0];
+    try {
+      const reduzida = await ImageManipulator.manipulateAsync(
+        asset.uri,
+        [{ resize: { width: 1024 } }],
+        { compress: 0.6, format: ImageManipulator.SaveFormat.JPEG }
+      );
+      setFormData({ ...formData, imagem: { ...asset, uri: reduzida.uri } });
+    } catch {
+      // se a compressão falhar, usa a imagem original
+      setFormData({ ...formData, imagem: asset });
     }
-  };
+  }
+};
 
   const abrirModalNovo = () => {
     setEditingId(null);
@@ -102,6 +107,11 @@ export default function Carros() {
         "Aviso",
         "Modelo, Ano e Placa são obrigatórios para um novo veículo.",
       );
+      return;
+    }
+
+    if (!editingId && !formData.imagem) {
+      Alert.alert("Aviso", "Selecione uma imagem do veículo para continuar.");
       return;
     }
 

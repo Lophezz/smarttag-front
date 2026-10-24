@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
-import { ScrollView, Alert, Image } from "react-native";
+import { ScrollView, Image } from "react-native";
+import { Alert } from "../../services/alert";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { YStack, XStack, Text, Button, Spinner } from "tamagui";
 import { Feather, Ionicons } from "@expo/vector-icons";
@@ -62,6 +63,15 @@ export default function PaginaAlerta() {
       );
     } finally {
       setIsSending(false);
+    }
+  };
+
+  const voltar = async () => {
+    try {
+      await api.get("/auth/me");
+      router.replace("/home");
+    } catch {
+      router.replace("/login");
     }
   };
 
@@ -132,21 +142,13 @@ export default function PaginaAlerta() {
                 de ser notificado.
               </Text>
 
-              {/* LÓGICA ATUALIZADA DO REDIRECIONAMENTO */}
+              {/* Só vai para a Home se existir sessão válida; senão, login */}
               <Button
                 size="$4"
                 bg="$blue10"
                 color="white"
                 mt="$4"
-                onPress={() => {
-                  try {
-                    // Tenta voltar para a Home principal da navegação das abas
-                    router.replace("/home");
-                  } catch (e) {
-                    // Se falhar (por não estar no contexto da app logada, embora o Expo Web costume aceitar), vai para o login
-                    router.replace("/login");
-                  }
-                }}
+                onPress={voltar}
                 accessibilityRole="button"
                 accessibilityLabel="Concluir e voltar"
               >

@@ -1,10 +1,6 @@
 import React, { useState, useCallback } from "react";
-import {
-  ScrollView,
-  Alert,
-  KeyboardAvoidingView,
-  Platform,
-} from "react-native";
+import { ScrollView, KeyboardAvoidingView, Platform } from "react-native";
+import { Alert } from "../services/alert";
 import { SafeAreaView } from "react-native-safe-area-context"
 import { YStack, XStack, Text, Button, Spinner, Input, Label } from "tamagui";
 import { Feather, Ionicons } from "@expo/vector-icons";
@@ -95,6 +91,9 @@ export default function Perfil() {
     setIsDeleting(true);
     try {
       await api.delete(`/auth/${userId}`);
+      try {
+        await api.post("/auth/logout");
+      } catch {}
       Alert.alert(
         "Conta Excluída",
         "A sua conta e todos os dados associados foram apagados.",

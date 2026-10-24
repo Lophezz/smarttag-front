@@ -2,7 +2,8 @@ import { Feather } from "@expo/vector-icons";
 import { CameraView, useCameraPermissions } from "expo-camera";
 import { router, Stack } from "expo-router";
 import { useState } from "react";
-import { Alert, StyleSheet, View } from "react-native";
+import { StyleSheet, View } from "react-native";
+import { Alert } from "../services/alert";
 import { Button, Text, YStack } from "tamagui";
 
 export default function Scanner() {

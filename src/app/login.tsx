@@ -1,5 +1,6 @@
 import React, { useState } from "react";
-import { KeyboardAvoidingView, Platform, Alert } from "react-native";
+import { KeyboardAvoidingView, Platform } from "react-native";
+import { Alert } from "../services/alert";
 import { router, Stack } from "expo-router";
 import { YStack, Text, Input, Button, Label, XStack, Spinner } from "tamagui";
 import { Feather } from "@expo/vector-icons"; // <-- Adicionado para o ícone do olho
