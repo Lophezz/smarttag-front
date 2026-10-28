@@ -51,6 +51,9 @@ export default function Chat() {
   const scrollViewRef = useRef<ScrollView>(null);
   const stompClientRef = useRef<Client | null>(null);
   const mensagensVistas = useRef<Set<string>>(new Set());
+  const mensagensPendentes = useRef<
+    Map<string, { conteudo: string; idSessao: string }>
+  >(new Map());
 
   useEffect(() => {
     carregarHistorico();
@@ -154,6 +157,30 @@ export default function Chat() {
     // Evita duplicar a mensagem na tela e também o anúncio por voz
     const chave = `${novaMsg.dataHora}|${novaMsg.conteudo}`;
     if (mensagensVistas.current.has(chave)) return;
+
+    // Visitantes anônimos recebem uma cópia local para não ficarem sem retorno
+    // visual. Usuários autenticados recebem a cópia do servidor; nesse caso,
+    // trocamos a temporária pela oficial em vez de exibir as duas.
+    if (!novaMsg.idTemporario && novaMsg.remetente !== "Dono do carro") {
+      const pendente = [...mensagensPendentes.current.entries()].find(
+        ([, mensagem]) =>
+          mensagem.conteudo === novaMsg.conteudo &&
+          mensagem.idSessao === String(novaMsg.idSessao),
+      );
+
+      if (pendente) {
+        const [idTemporario] = pendente;
+        mensagensPendentes.current.delete(idTemporario);
+        mensagensVistas.current.add(chave);
+        setMensagens((prev) =>
+          prev.map((mensagem) =>
+            mensagem.idTemporario === idTemporario ? novaMsg : mensagem,
+          ),
+        );
+        scrollParaOFinal();
+        return;
+      }
+    }
     mensagensVistas.current.add(chave);
 
     setMensagens((prev) => [...prev, novaMsg]);
@@ -171,11 +198,26 @@ export default function Chat() {
     if (!inputText.trim() || !stompClientRef.current?.connected) return;
 
     const conteudo = inputText.trim();
+    const idTemporario = `local-${Date.now()}-${Math.random().toString(36).slice(2)}`;
 
     try {
-      // A mensagem volta pelo WebSocket após ser salva pelo servidor. Não a
-      // incluímos antes disso, pois o servidor pode normalizar data/hora e a
-      // cópia local deixaria de ser reconhecida pela deduplicação.
+      // Um visitante sem conta não recebe necessariamente o eco do WebSocket.
+      // Exibimos sua própria mensagem e a reconciliamos se o servidor devolvê-la.
+      if (isAnonimo === "true") {
+        mensagensPendentes.current.set(idTemporario, {
+          conteudo,
+          idSessao: String(sessionId),
+        });
+        adicionarMensagem({
+          idTemporario,
+          conteudo,
+          idSessao: sessionId,
+          qrcode,
+          remetente: "Anônimo",
+          dataHora: new Date().toISOString(),
+        });
+      }
+
       setInputText("");
       Keyboard.dismiss();
 

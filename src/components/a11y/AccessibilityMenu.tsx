@@ -36,9 +36,25 @@ export default function AccessibilityMenu({ children }: { children: React.ReactN
   const [preferences, setPreferences] = useState(defaults);
   const [open, setOpen] = useState(false);
 
-  useEffect(() => { AsyncStorage.getItem(STORAGE_KEY).then((saved) => saved && setPreferences({ ...defaults, ...JSON.parse(saved) })).catch(() => undefined); }, []);
-  useEffect(() => { applyPreferences(preferences); AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(preferences)).catch(() => undefined); }, [preferences]);
-  const update = (change: Partial<Preferences>, announcement: string) => { setPreferences((current) => ({ ...current, ...change })); AccessibilityInfo.announceForAccessibility(announcement); };
+  useEffect(() => {
+    AsyncStorage.getItem(STORAGE_KEY)
+      .then((saved) => {
+        if (!saved) return;
+        const next = { ...defaults, ...JSON.parse(saved) };
+        applyPreferences(next);
+        setPreferences(next);
+      })
+      .catch(() => undefined);
+  }, []);
+  useEffect(() => { AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(preferences)).catch(() => undefined); }, [preferences]);
+  const update = (change: Partial<Preferences>, announcement: string) => {
+    const next = { ...preferences, ...change };
+    // A paleta precisa mudar antes da nova renderização, pois as telas leem
+    // diretamente o objeto semântico "cores".
+    applyPreferences(next);
+    setPreferences(next);
+    AccessibilityInfo.announceForAccessibility(announcement);
+  };
   const value = useMemo(() => preferences, [preferences]);
   // No web, o zoom é aplicado em global.css. No nativo, reduzimos a área de
   // layout na mesma proporção antes de escalá-la: assim ela continua ocupando

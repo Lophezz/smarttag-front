@@ -1,4 +1,5 @@
 import { Stack } from "expo-router";
+import "../global.css";
 import { TamaguiProvider } from "tamagui";
 import tamaguiConfig from "../../tamagui.config";
 import AccessibilityMenu from "../components/a11y/AccessibilityMenu";
