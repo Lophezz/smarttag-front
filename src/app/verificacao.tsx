@@ -1,25 +1,25 @@
 import React, { useState } from "react";
 import { KeyboardAvoidingView, Platform, ScrollView } from "react-native";
-import { Alert } from "../services/alert";
 import { useLocalSearchParams, router, Stack } from "expo-router";
-import { YStack, Text, Input, Button, Label, Spinner } from "tamagui";
+import { YStack, Text, Button, Spinner } from "tamagui";
 import axios from "axios";
 import api from "../services/api";
+import { Alert } from "../services/alert";
+import FormField from "../components/a11y/FormField";
+import { cores } from "../components/a11y/colors";
 
 export default function Verificacao() {
   const { email } = useLocalSearchParams();
   const [codigo, setCodigo] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [erro, setErro] = useState<string | undefined>();
 
   const handleVerificacao = async () => {
-    if (!codigo) {
-      Alert.alert(
-        "Atenção",
-        "Digite o código de verificação recebido no e-mail.",
-      );
+    if (!codigo.trim()) {
+      setErro("Digite o código de verificação recebido no e-mail.");
       return;
     }
-
+    setErro(undefined);
     setIsLoading(true);
 
     try {
@@ -29,19 +29,17 @@ export default function Verificacao() {
       });
 
       Alert.alert(
-        "Conta Ativada!",
+        "Conta ativada!",
         "Sua conta foi verificada com sucesso. Agora você pode fazer o login.",
       );
       router.push("/login");
     } catch (error) {
       console.error("Erro na verificação:", error);
       let mensagemErro = "Código inválido ou expirado. Tente novamente.";
-
       if (axios.isAxiosError(error)) {
         mensagemErro = error.response?.data?.message || mensagemErro;
       }
-
-      Alert.alert("Erro de Ativação", mensagemErro);
+      setErro(mensagemErro);
     } finally {
       setIsLoading(false);
     }
@@ -49,46 +47,47 @@ export default function Verificacao() {
 
   return (
     <KeyboardAvoidingView
-      style={{ flex: 1, backgroundColor: "#0F172A" }}
+      style={{ flex: 1, backgroundColor: cores.fundo }}
       behavior={Platform.OS === "ios" ? "padding" : "height"}
     >
       <Stack.Screen options={{ headerShown: false }} />
       <ScrollView
         contentContainerStyle={{ flexGrow: 1, justifyContent: "center" }}
+        keyboardShouldPersistTaps="handled"
       >
         <YStack f={1} jc="center" px="$6" py="$8" gap="$4">
-          <YStack mb="$6" accessible={true} accessibilityRole="header">
-            <Text fontSize="$9" fontWeight="800" color="white">
+          <YStack mb="$6">
+            <Text
+              fontSize="$9"
+              fontWeight="800"
+              color="white"
+              accessibilityRole="header"
+            >
               Ativar Conta
             </Text>
-            <Text fontSize="$4" color="$gray9" mt="$2">
+            <Text fontSize="$4" color={cores.textoSecundario} mt="$2">
               Enviamos um código de ativação para {email || "seu e-mail"}.
               Digite-o abaixo.
             </Text>
           </YStack>
 
-          <YStack gap="$2">
-            <Label color="white" htmlFor="codigo">
-              Código de Verificação
-            </Label>
-            <Input
-              id="codigo"
-              size="$5"
-              placeholder="Ex: 329987"
-              keyboardType="number-pad"
-              value={codigo}
-              onChangeText={setCodigo}
-              bg="#1E293B"
-              borderColor="$gray6"
-              color="white"
-              maxLength={6}
-              accessibilityLabel="Campo de entrada para o código numérico de ativação"
-            />
-          </YStack>
+          <FormField
+            id="codigo"
+            label="Código de verificação"
+            placeholder="6 dígitos"
+            keyboardType="number-pad"
+            autoComplete="one-time-code"
+            textContentType="oneTimeCode"
+            maxLength={6}
+            value={codigo}
+            onChangeText={setCodigo}
+            error={erro}
+            helper="Código numérico de 6 dígitos enviado ao seu e-mail."
+          />
 
           <Button
             size="$5"
-            bg="$orange10"
+            bg={cores.botaoAlternativo}
             color="white"
             fontWeight="700"
             mt="$4"
@@ -96,11 +95,9 @@ export default function Verificacao() {
             opacity={isLoading ? 0.7 : 1}
             onPress={handleVerificacao}
             icon={isLoading ? () => <Spinner color="white" /> : undefined}
-            accessibilityRole="button"
-            accessibilityLabel="Botão para ativar conta"
-            accessibilityHint="Toque para validar o código e ativar a sua conta"
+            accessibilityState={{ busy: isLoading, disabled: isLoading }}
           >
-            {isLoading ? "Verificando..." : "Ativar Conta"}
+            {isLoading ? "Verificando..." : "Ativar conta"}
           </Button>
         </YStack>
       </ScrollView>

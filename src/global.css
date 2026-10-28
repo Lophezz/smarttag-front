@@ -1,4 +1,6 @@
 :root {
+  --smarttag-zoom: 1;
+  --smarttag-contrast: 1;
   --font-display:
     Spline Sans, Inter, ui-sans-serif, system-ui, sans-serif, Apple Color Emoji, Segoe UI Emoji,
     Segoe UI Symbol, Noto Color Emoji;
@@ -6,4 +8,24 @@
     ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, Liberation Mono, Courier New, monospace;
   --font-rounded: 'SF Pro Rounded', 'Hiragino Maru Gothic ProN', Meiryo, 'MS PGothic', sans-serif;
   --font-serif: Georgia, 'Times New Roman', serif;
+}
+
+/* Preferências escolhidas pelo botão global. O zoom mantém proporcionais os
+   controles que usam tamanhos fixos no aplicativo web. */
+#root {
+  zoom: var(--smarttag-zoom);
+  filter: contrast(var(--smarttag-contrast));
+}
+
+html[data-smarttag-contrast="high"] #root {
+  background: #000;
+}
+
+html[data-smarttag-motion="reduce"] *,
+html[data-smarttag-motion="reduce"] *::before,
+html[data-smarttag-motion="reduce"] *::after {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  scroll-behavior: auto !important;
+  transition-duration: 0.01ms !important;
 }

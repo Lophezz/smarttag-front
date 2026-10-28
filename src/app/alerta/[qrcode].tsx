@@ -6,6 +6,7 @@ import { YStack, XStack, Text, Button, Spinner } from "tamagui";
 import { Feather, Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, router, Stack } from "expo-router";
 import api from "../../services/api";
+import { cores } from "../../components/a11y/colors";
 
 const OPCOES_ALERTA = [
   { id: "FAROL_ACESO", titulo: "Farol Aceso", icone: "sun" },
@@ -103,7 +104,7 @@ export default function PaginaAlerta() {
           accessible={true}
           accessibilityLabel="Carregando dados do veículo"
         >
-          <Spinner size="large" color="$blue10" />
+          <Spinner size="large" color={cores.link} />
           <Text color="white" mt="$4">
             A localizar veículo...
           </Text>
@@ -124,18 +125,24 @@ export default function PaginaAlerta() {
               p="$6"
               br="$4"
               borderWidth={1}
-              borderColor="#10B981"
-              accessible={true}
-              accessibilityRole="alert"
+              borderColor={cores.sucesso}
             >
-              <Ionicons name="checkmark-circle" size={80} color="#10B981" />
+              <Ionicons
+                name="checkmark-circle"
+                size={80}
+                color={cores.sucesso}
+                accessibilityElementsHidden
+                importantForAccessibility="no"
+              />
               <Text
                 color="white"
                 fontSize="$6"
                 fontWeight="bold"
                 textAlign="center"
+                accessibilityRole="alert"
+                accessibilityLiveRegion="assertive"
               >
-                Alerta Enviado!
+                Alerta enviado!
               </Text>
               <Text color="#94A3B8" fontSize="$4" textAlign="center">
                 Obrigado por ser um bom cidadão. O proprietário do veículo acaba
@@ -145,12 +152,10 @@ export default function PaginaAlerta() {
               {/* Só vai para a Home se existir sessão válida; senão, login */}
               <Button
                 size="$4"
-                bg="$blue10"
+                bg={cores.botaoPrimario}
                 color="white"
                 mt="$4"
                 onPress={voltar}
-                accessibilityRole="button"
-                accessibilityLabel="Concluir e voltar"
               >
                 Voltar
               </Button>
@@ -160,19 +165,24 @@ export default function PaginaAlerta() {
               <YStack
                 ai="center"
                 gap="$2"
-                accessible={true}
-                accessibilityRole="header"
               >
-                <Ionicons name="car-sport" size={64} color="white" />
+                <Ionicons
+                  name="car-sport"
+                  size={64}
+                  color="white"
+                  accessibilityElementsHidden
+                  importantForAccessibility="no"
+                />
                 <Text
                   color="white"
                   fontSize="$6"
                   fontWeight="bold"
                   textAlign="center"
+                  accessibilityRole="header"
                 >
-                  Notificar Proprietário
+                  Notificar proprietário
                 </Text>
-                <Text color="#94A3B8" fontSize="$3" textAlign="center">
+                <Text color={cores.textoSecundario} fontSize="$3" textAlign="center">
                   Selecione o que está a acontecer com este veículo ou inicie um
                   chat direto.
                 </Text>
@@ -194,6 +204,9 @@ export default function PaginaAlerta() {
                       source={{ uri: carro.link }}
                       style={{ width: "100%", height: 180 }}
                       resizeMode="cover"
+                      accessible
+                      accessibilityRole="image"
+                      accessibilityLabel={`Foto do veículo ${carro.modelo}`}
                     />
                   ) : (
                     <YStack
@@ -203,7 +216,7 @@ export default function PaginaAlerta() {
                       jc="center"
                       ai="center"
                     >
-                      <Ionicons name="car" size={48} color="#334155" />
+                      <Ionicons name="car" size={48} color={cores.bordaControle} accessibilityElementsHidden importantForAccessibility="no" />
                     </YStack>
                   )}
                   <YStack p="$4" ai="center">
@@ -238,8 +251,9 @@ export default function PaginaAlerta() {
                       />
                     }
                     onPress={() => enviarAlerta(opcao.id)}
-                    accessibilityRole="button"
-                    accessibilityLabel={`Enviar alerta de ${opcao.titulo}`}
+                    disabled={isSending}
+                    accessibilityHint="Envia um alerta com este motivo ao proprietário do veículo"
+                    accessibilityState={{ disabled: isSending, busy: isSending }}
                   >
                     {opcao.titulo}
                   </Button>
@@ -259,17 +273,17 @@ export default function PaginaAlerta() {
                   fontSize="$4"
                   fontWeight="bold"
                   textAlign="center"
+                  accessibilityRole="header"
                 >
                   Precisa de comunicar algo específico?
                 </Text>
                 <Button
                   size="$5"
-                  bg="$blue10"
+                  bg={cores.botaoPrimario}
                   color="white"
                   icon={<Feather name="message-circle" size={20} />}
                   onPress={abrirChat}
-                  accessibilityRole="button"
-                  accessibilityLabel="Iniciar Chat Anónimo"
+                  disabled={isSending}
                   accessibilityHint="Abre uma sala de mensagens em tempo real com o proprietário do veículo"
                 >
                   Iniciar Chat Anónimo
@@ -281,10 +295,11 @@ export default function PaginaAlerta() {
                   ai="center"
                   mt="$2"
                   accessible={true}
+                  accessibilityLiveRegion="polite"
                   accessibilityLabel="Enviando notificação..."
                 >
-                  <Spinner size="small" color="$blue10" />
-                  <Text color="#94A3B8" mt="$2">
+                  <Spinner size="small" color={cores.link} />
+                  <Text color={cores.textoSecundario} mt="$2">
                     A notificar...
                   </Text>
                 </YStack>

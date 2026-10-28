@@ -1,11 +1,14 @@
 import React, { useState } from "react";
 import { KeyboardAvoidingView, Platform, ScrollView } from "react-native";
-import { Alert } from "../services/alert";
 import { useLocalSearchParams, router, Stack } from "expo-router";
-import { YStack, Text, Input, Button, Label, XStack, Spinner } from "tamagui";
-import { Feather } from "@expo/vector-icons";
+import { YStack, Text, Button, Spinner } from "tamagui";
 import axios from "axios";
 import api from "../services/api";
+import { Alert } from "../services/alert";
+import FormField from "../components/a11y/FormField";
+import PasswordField from "../components/a11y/PasswordField";
+import RequisitosSenha, { validarSenha } from "../components/a11y/RequisitosSenha";
+import { cores } from "../components/a11y/colors";
 
 export default function ResetarSenha() {
   const { email } = useLocalSearchParams();
@@ -13,32 +16,16 @@ export default function ResetarSenha() {
   const [codigo, setCodigo] = useState("");
   const [novaSenha, setNovaSenha] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [mostrarSenha, setMostrarSenha] = useState(false);
+  const [erros, setErros] = useState<{ codigo?: string; geral?: string }>({});
 
-  // Validações da nova senha exigidas pelo Backend
-  const reqLength = novaSenha.length >= 6;
-  const reqUpper = /[A-Z]/.test(novaSenha);
-  const reqLower = /[a-z]/.test(novaSenha);
-  const reqNumber = /[0-9]/.test(novaSenha);
-  const reqSpecial = /[@#$%^&+=!]/.test(novaSenha);
-
-  const isPasswordValid =
-    reqLength && reqUpper && reqLower && reqNumber && reqSpecial;
+  const { valida: isPasswordValid } = validarSenha(novaSenha);
 
   const handleResetarSenha = async () => {
-    if (!codigo || !novaSenha) {
-      Alert.alert("Atenção", "Por favor, preencha o código e a nova senha.");
+    if (!codigo.trim()) {
+      setErros({ codigo: "Informe o código recebido por e-mail." });
       return;
     }
-
-    if (!isPasswordValid) {
-      Alert.alert(
-        "Senha Fraca",
-        "A sua nova senha não cumpre todos os requisitos de segurança.",
-      );
-      return;
-    }
-
+    setErros({});
     setIsLoading(true);
 
     try {
@@ -57,157 +44,94 @@ export default function ResetarSenha() {
       console.error("Erro ao resetar senha:", error);
       let mensagemErro =
         "Não foi possível redefinir a senha. Verifique o código e tente novamente.";
-
       if (axios.isAxiosError(error)) {
         mensagemErro = error.response?.data?.message || mensagemErro;
       }
-
-      Alert.alert("Erro", mensagemErro);
+      setErros({ geral: mensagemErro });
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Componente visual para cada requisito da senha
-  const RequisitoSenha = ({
-    atende,
-    texto,
-  }: {
-    atende: boolean;
-    texto: string;
-  }) => (
-    <XStack
-      ai="center"
-      gap="$2"
-      mb="$1"
-      accessible={true}
-      accessibilityLabel={`Requisito de senha: ${texto}. ${atende ? "Cumprido" : "Não cumprido"}`}
-    >
-      <Feather
-        name={atende ? "check-circle" : "circle"}
-        size={14}
-        color={atende ? "#10B981" : "#64748B"}
-      />
-      <Text color={atende ? "#10B981" : "#64748B"} fontSize="$3">
-        {texto}
-      </Text>
-    </XStack>
-  );
-
   return (
     <KeyboardAvoidingView
-      style={{ flex: 1, backgroundColor: "#0F172A" }}
+      style={{ flex: 1, backgroundColor: cores.fundo }}
       behavior={Platform.OS === "ios" ? "padding" : "height"}
     >
       <Stack.Screen options={{ headerShown: false }} />
       <ScrollView
         contentContainerStyle={{ flexGrow: 1, justifyContent: "center" }}
+        keyboardShouldPersistTaps="handled"
       >
         <YStack f={1} jc="center" px="$6" py="$8" gap="$4">
-          <YStack mb="$6" accessible={true} accessibilityRole="header">
-            <Text fontSize="$9" fontWeight="800" color="white">
+          <YStack mb="$6">
+            <Text
+              fontSize="$9"
+              fontWeight="800"
+              color="white"
+              accessibilityRole="header"
+            >
               Criar Nova Senha
             </Text>
-            <Text fontSize="$4" color="$gray9" mt="$2">
+            <Text fontSize="$4" color={cores.textoSecundario} mt="$2">
               Digite o código que enviamos para {email || "seu e-mail"} e
               escolha sua nova senha.
             </Text>
           </YStack>
 
-          <YStack gap="$2">
-            <Label color="white" htmlFor="codigo">
-              Código de Recuperação
-            </Label>
-            <Input
-              id="codigo"
-              size="$5"
-              placeholder="Ex: 123456"
-              keyboardType="number-pad"
-              value={codigo}
-              onChangeText={setCodigo}
-              bg="#1E293B"
-              borderColor="$gray6"
-              color="white"
-              accessibilityLabel="Campo para digitar o código numérico recebido no e-mail"
-            />
-          </YStack>
-
-          <YStack gap="$2">
-            <Label color="white" htmlFor="nova-senha">
-              Nova Senha
-            </Label>
-            <XStack
-              ai="center"
-              bg="#1E293B"
-              br="$4"
+          {!!erros.geral && (
+            <YStack
+              bg="rgba(248,113,113,0.12)"
               borderWidth={1}
-              borderColor="$gray6"
-              pr="$3"
+              borderColor={cores.erro}
+              br="$4"
+              p="$3"
+              accessibilityRole="alert"
+              accessibilityLiveRegion="assertive"
             >
-              <Input
-                id="nova-senha"
-                f={1}
-                size="$5"
-                placeholder="Crie uma senha forte"
-                secureTextEntry={!mostrarSenha}
-                value={novaSenha}
-                onChangeText={setNovaSenha}
-                bg="transparent"
-                color="white"
-                borderWidth={0}
-                accessibilityLabel="Campo para criar a nova senha"
-              />
-              <Feather
-                name={mostrarSenha ? "eye-off" : "eye"}
-                size={20}
-                color="#94A3B8"
-                onPress={() => setMostrarSenha(!mostrarSenha)}
-                accessibilityRole="button"
-                accessibilityLabel={
-                  mostrarSenha ? "Ocultar senha" : "Mostrar senha"
-                }
-                accessibilityHint="Alterna a visibilidade da nova senha digitada"
-              />
-            </XStack>
-          </YStack>
+              <Text color={cores.erro} fontSize="$4">
+                Erro: {erros.geral}
+              </Text>
+            </YStack>
+          )}
 
-          {/* Checklist Visual de Segurança da Senha */}
-          <YStack
-            bg="#0F172A"
-            p="$3"
-            br="$3"
-            borderWidth={1}
-            borderColor={isPasswordValid ? "#10B981" : "#334155"}
-          >
-            <RequisitoSenha
-              atende={reqLength}
-              texto="Pelo menos 6 caracteres"
-            />
-            <RequisitoSenha atende={reqUpper} texto="Uma letra maiúscula" />
-            <RequisitoSenha atende={reqLower} texto="Uma letra minúscula" />
-            <RequisitoSenha atende={reqNumber} texto="Um número" />
-            <RequisitoSenha
-              atende={reqSpecial}
-              texto="Um caractere especial (@#$%^&+=!)"
-            />
-          </YStack>
+          <FormField
+            id="codigo"
+            label="Código de recuperação"
+            placeholder="6 dígitos"
+            keyboardType="number-pad"
+            autoComplete="one-time-code"
+            textContentType="oneTimeCode"
+            value={codigo}
+            onChangeText={setCodigo}
+            error={erros.codigo}
+          />
+
+          <PasswordField
+            id="nova-senha"
+            label="Nova senha"
+            autoComplete="new-password"
+            value={novaSenha}
+            onChangeText={setNovaSenha}
+            helper="A senha precisa cumprir todos os requisitos abaixo."
+          />
+
+          <RequisitosSenha senha={novaSenha} />
 
           <Button
             size="$5"
-            bg="$orange10"
+            bg={cores.botaoAlternativo}
             color="white"
             fontWeight="700"
             mt="$4"
             disabled={isLoading || !isPasswordValid}
             opacity={isLoading || !isPasswordValid ? 0.5 : 1}
-            pressStyle={{ scale: 0.97, bg: "$orange9" }}
+            pressStyle={{ scale: 0.97 }}
             onPress={handleResetarSenha}
             icon={isLoading ? () => <Spinner color="white" /> : undefined}
-            accessibilityRole="button"
-            accessibilityLabel="Botão para redefinir senha"
-            accessibilityHint="Toque para salvar a nova senha e retornar ao login"
+            accessibilityState={{ busy: isLoading, disabled: isLoading || !isPasswordValid }}
           >
-            {isLoading ? "Salvando..." : "Redefinir Senha"}
+            {isLoading ? "Salvando..." : "Redefinir senha"}
           </Button>
         </YStack>
       </ScrollView>

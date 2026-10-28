@@ -6,6 +6,9 @@ import { YStack, XStack, Text, Avatar, Spinner, Button } from "tamagui";
 import { Feather, Ionicons } from "@expo/vector-icons";
 import { router, useFocusEffect, Stack } from "expo-router";
 import api from "../services/api";
+import BottomTabBar from "../components/a11y/BottomTabBar";
+import IconButton from "../components/a11y/IconButton";
+import { cores } from "../components/a11y/colors";
 
 export default function Home() {
   const insets = useSafeAreaInsets();
@@ -56,7 +59,7 @@ export default function Home() {
       const dados = resUsuario.data;
       setUsuario({
         nome: dados.nome || "Usuário",
-        pontos: dados.pontos || 0,
+        pontos: dados.pontos ?? 0,
         status: formatarStatus(dados.citizienStatus),
       });
 
@@ -107,12 +110,7 @@ export default function Home() {
       >
         <YStack f={1} px="$5" pt="$8" pb="$4" gap="$6">
           {/* CABEÇALHO */}
-          <XStack
-            ai="center"
-            jc="space-between"
-            accessible={true}
-            accessibilityRole="header"
-          >
+          <XStack ai="center" jc="space-between">
             <XStack ai="center" gap="$3">
               <Avatar
                 circular
@@ -120,7 +118,7 @@ export default function Home() {
                 accessible={true}
                 accessibilityLabel={`Iniciais do usuário: ${usuario.nome ? usuario.nome.charAt(0) : "U"}`}
               >
-                <Avatar.Fallback bg="$blue10" jc="center" ai="center">
+                <Avatar.Fallback bg={cores.botaoPrimario} jc="center" ai="center">
                   <Text color="white" fontSize="$5" fontWeight="bold">
                     {usuario.nome ? usuario.nome.charAt(0).toUpperCase() : "U"}
                   </Text>
@@ -128,7 +126,7 @@ export default function Home() {
               </Avatar>
 
               {isLoading ? (
-                <Spinner size="small" color="$blue10" />
+                <Spinner size="small" color={cores.link} />
               ) : (
                 <Text color="white" fontSize="$5" fontWeight="600">
                   {usuario.nome}
@@ -137,15 +135,13 @@ export default function Home() {
             </XStack>
 
             {/* ACESSO AO PERFIL */}
-            <Feather
-              name="settings"
-              size={24}
-              color="#94A3B8"
+            <IconButton
+              label="Configurações do perfil"
+              hint="Abre a tela do seu perfil"
               onPress={() => router.replace("/perfil")}
-              accessible={true}
-              accessibilityRole="button"
-              accessibilityLabel="Configurações do perfil"
-            />
+            >
+              <Feather name="settings" size={24} color={cores.textoSuave} />
+            </IconButton>
           </XStack>
 
           {/* STATUS DE CIDADÃO */}
@@ -158,10 +154,11 @@ export default function Home() {
             borderWidth={1}
             borderColor="#334155"
             accessible={true}
+            accessibilityRole="summary"
             accessibilityLabel={`Seu status atual é ${usuario.status}, e você tem ${usuario.pontos} pontos.`}
           >
             <Text fontSize="$4" fontWeight="600">
-              <Text color="$blue10">{usuario.status} - </Text>
+              <Text color={cores.link}>{usuario.status} - </Text>
               <Text color="white">{usuario.pontos} pontos</Text>
             </Text>
           </XStack>
@@ -170,18 +167,16 @@ export default function Home() {
           <YStack mt="$2" mb="$2">
             <Button
               size="$5"
-              bg="$orange10"
+              bg={cores.botaoAlternativo}
               color="white"
               fontWeight="700"
               icon={<Ionicons name="qr-code-outline" size={24} color="white" />}
               onPress={() => router.replace("/scanner")}
-              accessible={true}
-              accessibilityRole="button"
-              accessibilityLabel="Escanear QR Code. Abra a câmera para notificar um veículo e ganhar pontos."
+              accessibilityHint="Abre a câmera para ler o QR Code de um veículo, notificar o proprietário e ganhar pontos"
             >
               Escanear Veículo
             </Button>
-            <Text color="#94A3B8" fontSize={12} textAlign="center" mt="$2">
+            <Text color={cores.textoSecundario} fontSize={12} textAlign="center" mt="$2">
               Leia o QR Code de outros carros para enviar alertas e ganhar
               pontos de cidadão!
             </Text>
@@ -190,17 +185,17 @@ export default function Home() {
           {/* HISTÓRICO DE AÇÕES */}
           <YStack gap="$3">
             <Text
-              color="#94A3B8"
-              fontSize="$3"
+              color={cores.textoSuave}
+              fontSize="$5"
+              fontWeight="700"
               mb="$2"
-              accessible={true}
               accessibilityRole="header"
             >
-              Histórico de Ações
+              Histórico de ações
             </Text>
 
             {isLoading ? (
-              <Spinner size="large" color="$blue10" mt="$4" />
+              <Spinner size="large" color={cores.link} mt="$4" accessibilityLabel="Carregando histórico" accessibilityLiveRegion="polite" />
             ) : historico.length === 0 ? (
               <YStack
                 ai="center"
@@ -209,7 +204,7 @@ export default function Home() {
                 accessible={true}
                 accessibilityLabel="Nenhuma ação recente encontrada"
               >
-                <Feather name="activity" size={32} color="#334155" />
+                <Feather name="activity" size={32} color={cores.bordaControle} />
                 <Text color="#94A3B8" fontSize="$3">
                   Você ainda não possui interações.
                 </Text>
@@ -229,7 +224,7 @@ export default function Home() {
                 >
                   <XStack ai="flex-start" gap="$3">
                     <YStack mt="$1">
-                      <Feather name="info" size={20} color="$blue10" />
+                      <Feather name="info" size={20} color={cores.link} />
                     </YStack>
                     <YStack f={1}>
                       <Text color="white" fontSize="$4" fontWeight="600">
@@ -238,7 +233,7 @@ export default function Home() {
                       <Text color="#94A3B8" fontSize="$3" mt="$1">
                         Veículo: {acao.modelo} ({acao.placa})
                       </Text>
-                      <Text color="#64748B" fontSize="$2" mt="$1">
+                      <Text color={cores.textoSecundario} fontSize="$2" mt="$1">
                         {formatarData(acao.data)}
                       </Text>
                     </YStack>
@@ -250,106 +245,11 @@ export default function Home() {
         </YStack>
       </ScrollView>
 
-      {/* BARRA DE NAVEGAÇÃO INFERIOR PADRONIZADA COM BADGES */}
-      <XStack
-        bg="#0F172A"
-        pt="$3"
-        pb={Math.max(insets.bottom, 20)}
-        px="$6"
-        jc="space-between"
-        borderTopWidth={1}
-        borderTopColor="#1E293B"
-      >
-        {/* ABA 1: HOME */}
-        <YStack
-          ai="center"
-          gap="$1"
-          opacity={1}
-          onPress={() => router.replace("/home")}
-          accessible={true}
-          accessibilityRole="button"
-          accessibilityLabel="Aba atual: Home"
-        >
-          <Feather name="home" size={24} color="white" />
-          <Text color="white" fontSize={10}>
-            Home
-          </Text>
-        </YStack>
-
-        {/* ABA 2: CHATS (COM BADGE) */}
-        <YStack
-          ai="center"
-          gap="$1"
-          opacity={0.5}
-          onPress={() => router.replace("/mensagens")}
-          accessible={true}
-          accessibilityRole="button"
-          accessibilityLabel="Aba Chats"
-        >
-          <YStack>
-            <Feather name="message-circle" size={24} color="white" />
-            {temMensagemNaoLida && (
-              <YStack
-                position="absolute"
-                top={-2}
-                right={-4}
-                width={10}
-                height={10}
-                br={5}
-                bg="$red10"
-              />
-            )}
-          </YStack>
-          <Text color="white" fontSize={10}>
-            Chats
-          </Text>
-        </YStack>
-
-        {/* ABA 3: ALERTAS (COM BADGE) */}
-        <YStack
-          ai="center"
-          gap="$1"
-          opacity={0.5}
-          onPress={() => router.replace("/notificacoes")}
-          accessible={true}
-          accessibilityRole="button"
-          accessibilityLabel="Aba Alertas"
-        >
-          <YStack>
-            <Feather name="bell" size={24} color="white" />
-            {temAlertaPendente && (
-              <YStack
-                position="absolute"
-                top={-2}
-                right={-2}
-                width={10}
-                height={10}
-                br={5}
-                bg="$red10"
-              />
-            )}
-          </YStack>
-          <Text color="white" fontSize={10}>
-            Alertas
-          </Text>
-        </YStack>
-
-        {/* ABA 4: CARROS */}
-        <YStack
-          ai="center"
-          gap="$1"
-          opacity={0.5}
-          onPress={() => router.replace("/carros")}
-          accessible={true}
-          accessibilityRole="button"
-          accessibilityLabel="Aba Carros"
-        >
-          <Ionicons name="car-sport" size={26} color="white" />
-          <Text color="white" fontSize={10}>
-            Carros
-          </Text>
-        </YStack>
-      </XStack>
+      <BottomTabBar
+        ativa="home"
+        temMensagemNaoLida={temMensagemNaoLida}
+        temAlertaPendente={temAlertaPendente}
+      />
     </SafeAreaView>
   );
 }

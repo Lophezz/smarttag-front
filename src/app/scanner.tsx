@@ -2,9 +2,11 @@ import { Feather } from "@expo/vector-icons";
 import { CameraView, useCameraPermissions } from "expo-camera";
 import { router, Stack } from "expo-router";
 import { useState } from "react";
-import { StyleSheet, View } from "react-native";
+import { AccessibilityInfo, StyleSheet, View } from "react-native";
 import { Alert } from "../services/alert";
 import { Button, Text, YStack } from "tamagui";
+import IconButton from "../components/a11y/IconButton";
+import { cores } from "../components/a11y/colors";
 
 export default function Scanner() {
   // Hook oficial do Expo para pedir a permissão
@@ -21,17 +23,29 @@ export default function Scanner() {
     return (
       <YStack f={1} jc="center" ai="center" bg="#0F172A" px="$6" gap="$4">
         <Stack.Screen options={{ headerShown: false }} />
-        <Feather name="camera-off" size={64} color="#94A3B8" />
-        <Text color="white" fontSize="$5" fontWeight="bold" textAlign="center">
+        <Feather
+          name="camera-off"
+          size={64}
+          color={cores.textoSecundario}
+          accessibilityElementsHidden
+          importantForAccessibility="no"
+        />
+        <Text
+          color="white"
+          fontSize="$5"
+          fontWeight="bold"
+          textAlign="center"
+          accessibilityRole="header"
+        >
           Precisamos da sua câmera
         </Text>
-        <Text color="#94A3B8" fontSize="$3" textAlign="center" mb="$4">
+        <Text color={cores.textoSecundario} fontSize="$3" textAlign="center" mb="$4">
           Para conseguir identificar o veículo e enviar alertas com o seu
           perfil, permita o acesso à câmera.
         </Text>
         <Button
           size="$5"
-          bg="$blue10"
+          bg={cores.botaoPrimario}
           color="white"
           onPress={requestPermission}
         >
@@ -40,7 +54,9 @@ export default function Scanner() {
         <Button
           size="$4"
           bg="transparent"
-          color="$red10"
+          color={cores.erro}
+          borderWidth={1}
+          borderColor={cores.erro}
           onPress={() => router.replace("/home")}
         >
           Voltar
@@ -59,6 +75,7 @@ export default function Scanner() {
   }) => {
     // Trava para garantir que só lê uma vez
     setScanned(true);
+    AccessibilityInfo.announceForAccessibility("QR Code lido");
 
     try {
       // O dado esperado é uma URL do Vercel, ex: https://smarttag-front.vercel.app/alerta/123-abc
@@ -99,6 +116,8 @@ export default function Scanner() {
           bottom: 0,
         }}
         facing="back"
+        accessible
+        accessibilityLabel="Visor da câmera para ler o QR Code da etiqueta SmartTag"
         onBarcodeScanned={scanned ? undefined : handleBarCodeScanned}
         barcodeScannerSettings={{
           barcodeTypes: ["qr"],
@@ -108,22 +127,21 @@ export default function Scanner() {
       {/* Interface de mira sobre a câmera */}
       <YStack f={1} jc="space-between" p="$6">
         <YStack ai="flex-start" mt="$10">
-          <Button
-            size="$4"
-            circular
-            bg="rgba(15, 23, 42, 0.7)"
+          <IconButton
+            label="Fechar câmera e voltar para o início"
             onPress={() => router.replace("/home")}
+            style={{ backgroundColor: "rgba(15, 23, 42, 0.85)" }}
           >
             <Feather name="x" size={24} color="white" />
-          </Button>
+          </IconButton>
         </YStack>
 
         <YStack ai="center" gap="$2">
           {/* O quadrado vazado simulando o foco da câmera */}
-          <View style={styles.mira} />
+          <View style={styles.mira} importantForAccessibility="no" accessibilityElementsHidden />
 
           <YStack bg="rgba(15, 23, 42, 0.8)" px="$4" py="$2" br="$4" mt="$4">
-            <Text color="white" fontSize="$3" fontWeight="bold">
+            <Text color="white" fontSize="$3" fontWeight="bold" accessibilityRole="header">
               Aponte para a etiqueta SmartTag
             </Text>
           </YStack>
@@ -144,7 +162,7 @@ const styles = StyleSheet.create({
     width: 250,
     height: 250,
     borderWidth: 2,
-    borderColor: "#3A7BD5",
+    borderColor: "#60A5FA",
     backgroundColor: "transparent",
     borderRadius: 24,
   },

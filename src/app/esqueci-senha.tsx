@@ -1,21 +1,25 @@
 import React, { useState } from "react";
 import { KeyboardAvoidingView, Platform, ScrollView } from "react-native";
-import { Alert } from "../services/alert";
 import { router, Stack } from "expo-router";
-import { YStack, Text, Input, Button, Label, XStack, Spinner } from "tamagui";
+import { YStack, Text, Button, XStack, Spinner } from "tamagui";
 import axios from "axios";
 import api from "../services/api";
+import { Alert } from "../services/alert";
+import FormField from "../components/a11y/FormField";
+import TextLink from "../components/a11y/TextLink";
+import { cores } from "../components/a11y/colors";
 
 export default function EsqueciSenha() {
   const [email, setEmail] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [erro, setErro] = useState<string | undefined>();
 
   const handleSolicitarRecuperacao = async () => {
-    if (!email) {
-      Alert.alert("Atenção", "Por favor, digite seu e-mail cadastrado.");
+    if (!email.trim()) {
+      setErro("Informe o e-mail cadastrado.");
       return;
     }
-
+    setErro(undefined);
     setIsLoading(true);
 
     try {
@@ -24,10 +28,9 @@ export default function EsqueciSenha() {
       });
 
       Alert.alert(
-        "E-mail Enviado!",
+        "E-mail enviado!",
         "Se o e-mail estiver cadastrado, você receberá um código de recuperação em instantes.",
       );
-
       router.push({
         pathname: "/resetar-senha",
         params: { email: email.toLowerCase().trim() },
@@ -36,12 +39,10 @@ export default function EsqueciSenha() {
       console.error("Erro ao solicitar recuperação:", error);
       let mensagemErro =
         "Não foi possível processar a solicitação. Tente novamente mais tarde.";
-
       if (axios.isAxiosError(error)) {
         mensagemErro = error.response?.data?.message || mensagemErro;
       }
-
-      Alert.alert("Erro", mensagemErro);
+      setErro(mensagemErro);
     } finally {
       setIsLoading(false);
     }
@@ -49,73 +50,69 @@ export default function EsqueciSenha() {
 
   return (
     <KeyboardAvoidingView
-      style={{ flex: 1, backgroundColor: "#0F172A" }}
+      style={{ flex: 1, backgroundColor: cores.fundo }}
       behavior={Platform.OS === "ios" ? "padding" : "height"}
     >
       <Stack.Screen options={{ headerShown: false }} />
       <ScrollView
         contentContainerStyle={{ flexGrow: 1, justifyContent: "center" }}
+        keyboardShouldPersistTaps="handled"
       >
         <YStack f={1} jc="center" px="$6" py="$8" gap="$4">
-          <YStack mb="$6" accessible={true} accessibilityRole="header">
-            <Text fontSize="$9" fontWeight="800" color="white">
+          <YStack mb="$6">
+            <Text
+              fontSize="$9"
+              fontWeight="800"
+              color="white"
+              accessibilityRole="header"
+            >
               Recuperar Senha
             </Text>
-            <Text fontSize="$4" color="$gray9" mt="$2">
+            <Text fontSize="$4" color={cores.textoSecundario} mt="$2">
               Digite o e-mail associado à sua conta. Enviaremos um código para
               você criar uma nova senha.
             </Text>
           </YStack>
 
-          <YStack gap="$2">
-            <Label color="white" htmlFor="email">
-              E-mail
-            </Label>
-            <Input
-              id="email"
-              size="$5"
-              placeholder="Digite seu e-mail"
-              keyboardType="email-address"
-              autoCapitalize="none"
-              value={email}
-              onChangeText={setEmail}
-              bg="#1E293B"
-              borderColor="$gray6"
-              color="white"
-              accessibilityLabel="Campo de entrada para o e-mail de recuperação"
-            />
-          </YStack>
+          <FormField
+            id="email"
+            label="E-mail"
+            placeholder="nome@exemplo.com"
+            keyboardType="email-address"
+            autoCapitalize="none"
+            autoComplete="email"
+            textContentType="emailAddress"
+            autoCorrect={false}
+            value={email}
+            onChangeText={setEmail}
+            error={erro}
+          />
 
           <Button
             size="$5"
-            bg="$blue10"
+            bg={cores.botaoPrimario}
             color="white"
             fontWeight="700"
             mt="$4"
             disabled={isLoading}
             opacity={isLoading ? 0.7 : 1}
-            pressStyle={{ scale: 0.97, bg: "$blue9" }}
+            pressStyle={{ scale: 0.97 }}
             onPress={handleSolicitarRecuperacao}
             icon={isLoading ? () => <Spinner color="white" /> : undefined}
-            accessibilityRole="button"
-            accessibilityLabel="Botão Enviar Código"
-            accessibilityHint="Toque para solicitar um código de recuperação no seu e-mail"
+            accessibilityState={{ busy: isLoading, disabled: isLoading }}
           >
-            {isLoading ? "Enviando..." : "Enviar Código"}
+            {isLoading ? "Enviando..." : "Enviar código"}
           </Button>
 
-          <XStack jc="center" mt="$4" gap="$2">
-            <Text color="$gray9">Lembrou sua senha?</Text>
-            <Text
-              color="$orange10"
-              fontWeight="700"
+          <XStack jc="center" ai="center" mt="$4" gap="$2" fw="wrap">
+            <Text color={cores.textoSecundario}>Lembrou sua senha?</Text>
+            <TextLink
+              color={cores.linkAlternativo}
               onPress={() => router.back()}
-              accessibilityRole="link"
-              accessibilityLabel="Voltar ao Login"
-              accessibilityHint="Toque para retornar à tela de acesso"
+              hint="Volta para a tela de acesso"
             >
-              Voltar ao Login
-            </Text>
+              Voltar ao login
+            </TextLink>
           </XStack>
         </YStack>
       </ScrollView>

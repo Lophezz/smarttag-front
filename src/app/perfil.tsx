@@ -6,6 +6,9 @@ import { YStack, XStack, Text, Button, Spinner, Input, Label } from "tamagui";
 import { Feather, Ionicons } from "@expo/vector-icons";
 import { router, useFocusEffect, Stack } from "expo-router";
 import api from "../services/api";
+import Cabecalho from "../components/a11y/Cabecalho";
+import FormField from "../components/a11y/FormField";
+import { cores } from "../components/a11y/colors";
 
 export default function Perfil() {
   const [isLoading, setIsLoading] = useState(true);
@@ -120,7 +123,7 @@ export default function Perfil() {
   if (isLoading) {
     return (
       <YStack f={1} bg="#0F172A" ai="center" jc="center">
-        <Spinner size="large" color="$blue10" />
+        <Spinner size="large" color={cores.link} accessibilityLabel="Carregando perfil" accessibilityLiveRegion="polite" />
       </YStack>
     );
   }
@@ -137,36 +140,7 @@ export default function Perfil() {
         style={{ flex: 1 }}
         behavior={Platform.OS === "ios" ? "padding" : "height"}
       >
-        {/* CABEÇALHO COM BOTÃO VOLTAR */}
-        <XStack
-          px="$6"
-          pt="$8"
-          pb="$4"
-          ai="center"
-          gap="$4"
-          accessible={true}
-          accessibilityRole="header"
-        >
-          <Feather
-            name="arrow-left"
-            size={24}
-            color="#94A3B8"
-            onPress={() => router.replace("/home")}
-            accessible={true}
-            accessibilityRole="button"
-            accessibilityLabel="Voltar para a tela anterior"
-          />
-          <Text
-            f={1}
-            fontSize="$7"
-            fontWeight="bold"
-            color="white"
-            numberOfLines={1}
-            adjustsFontSizeToFit
-          >
-            O Meu Perfil
-          </Text>
-        </XStack>
+        <Cabecalho titulo="Meu perfil" onVoltar={() => router.replace("/home")} />
 
         <ScrollView contentContainerStyle={{ flexGrow: 1, paddingBottom: 40 }}>
           <YStack f={1} px="$6" gap="$4">
@@ -181,11 +155,11 @@ export default function Perfil() {
               borderColor="#334155"
             >
               <YStack>
-                <Text color="#94A3B8" fontSize="$3">
-                  Status de Cidadão
+                <Text color={cores.textoSecundario} fontSize="$3">
+                  Status de cidadão
                 </Text>
                 <Text
-                  color="$blue10"
+                  color={cores.link}
                   fontSize="$5"
                   fontWeight="bold"
                   textTransform="capitalize"
@@ -194,11 +168,11 @@ export default function Perfil() {
                 </Text>
               </YStack>
               <YStack ai="flex-end">
-                <Text color="#94A3B8" fontSize="$3">
+                <Text color={cores.textoSecundario} fontSize="$3">
                   Pontuação
                 </Text>
                 <Text color="white" fontSize="$5" fontWeight="bold">
-                  {status.pontos} pts
+                  {status.pontos} pontos
                 </Text>
               </YStack>
             </XStack>
@@ -210,14 +184,13 @@ export default function Perfil() {
                 p="$4"
                 br="$4"
                 borderWidth={1}
-                borderColor="$red10"
-                accessible={true}
+                borderColor={cores.erro}
                 accessibilityRole="alert"
               >
                 <XStack ai="center" gap="$2" mb="$2">
-                  <Feather name="alert-triangle" size={20} color="#EF4444" />
-                  <Text color="$red10" fontWeight="bold" fontSize="$4">
-                    Conta em Risco de Banimento
+                  <Feather name="alert-triangle" size={20} color={cores.erro} accessibilityElementsHidden importantForAccessibility="no" />
+                  <Text color={cores.erro} fontWeight="bold" fontSize="$4">
+                    Atenção: conta em risco de banimento
                   </Text>
                 </XStack>
                 <Text color="#FCA5A5" fontSize="$3">
@@ -228,77 +201,72 @@ export default function Perfil() {
               </YStack>
             )}
 
-            <YStack gap="$2" mt="$2">
-              <Label color="white">Nome Completo</Label>
-              <Input
-                value={formData.nome}
-                onChangeText={(text) =>
-                  setFormData({ ...formData, nome: text })
-                }
-                bg="#0F172A"
-                color="white"
-                borderColor="$gray6"
-              />
-            </YStack>
+            <FormField
+              id="perfil-nome"
+              label="Nome completo"
+              autoComplete="name"
+              textContentType="name"
+              autoCapitalize="words"
+              value={formData.nome}
+              onChangeText={(text) => setFormData({ ...formData, nome: text })}
+            />
 
-            <YStack gap="$2">
-              <Label color="white">Telefone</Label>
-              <Input
-                value={formData.telefone}
-                onChangeText={(text) =>
-                  setFormData({ ...formData, telefone: text })
-                }
-                keyboardType="phone-pad"
-                bg="#0F172A"
-                color="white"
-                borderColor="$gray6"
-              />
-            </YStack>
+            <FormField
+              id="perfil-telefone"
+              label="Telefone"
+              keyboardType="phone-pad"
+              autoComplete="tel"
+              textContentType="telephoneNumber"
+              value={formData.telefone}
+              onChangeText={(text) =>
+                setFormData({ ...formData, telefone: text })
+              }
+            />
 
-            <YStack gap="$2">
-              <Label color="white">CPF</Label>
-              <Input
-                value={formData.cpf}
-                onChangeText={(text) => setFormData({ ...formData, cpf: text })}
-                keyboardType="numeric"
-                bg="#0F172A"
-                color="white"
-                borderColor="$gray6"
-              />
-            </YStack>
+            <FormField
+              id="perfil-cpf"
+              label="CPF"
+              keyboardType="numeric"
+              autoComplete="off"
+              value={formData.cpf}
+              onChangeText={(text) => setFormData({ ...formData, cpf: text })}
+              helper="Somente números."
+            />
 
             <Button
               size="$5"
-              bg="$blue10"
+              bg={cores.botaoPrimario}
               color="white"
               fontWeight="700"
               mt="$2"
               onPress={handleAtualizarDados}
               disabled={isSaving}
+              accessibilityState={{ busy: isSaving, disabled: isSaving }}
               icon={isSaving ? () => <Spinner color="white" /> : undefined}
             >
               {isSaving ? "A guardar..." : "Atualizar Dados"}
             </Button>
 
-            <YStack borderBottomWidth={1} borderColor="#334155" my="$4" />
+            <YStack borderBottomWidth={1} borderColor={cores.bordaCartao} my="$4" />
 
             <YStack gap="$3" mt="auto">
               <Button
                 size="$4"
                 bg="transparent"
-                color="$red10"
+                color={cores.erro}
                 borderWidth={1}
-                borderColor="$red10"
+                borderColor={cores.erro}
                 onPress={confirmarExclusao}
                 disabled={isDeleting}
-                icon={isDeleting ? () => <Spinner color="$red10" /> : undefined}
+                accessibilityHint="Pede confirmação antes de apagar a conta definitivamente"
+                icon={isDeleting ? () => <Spinner color={cores.erro} /> : undefined}
               >
                 {isDeleting ? "A apagar..." : "Excluir a Minha Conta"}
               </Button>
 
               <Button
                 size="$5"
-                bg="#334155"
+                bg={cores.botaoNeutro}
                 color="white"
                 fontWeight="700"
                 onPress={handleLogout}

@@ -6,6 +6,9 @@ import { YStack, XStack, Text, Button, Spinner } from "tamagui";
 import { Feather, Ionicons } from "@expo/vector-icons";
 import { router, useFocusEffect, Stack } from "expo-router";
 import api from "../services/api";
+import BottomTabBar from "../components/a11y/BottomTabBar";
+import Cabecalho from "../components/a11y/Cabecalho";
+import { cores } from "../components/a11y/colors";
 
 export default function Notificacoes() {
   const insets = useSafeAreaInsets();
@@ -37,13 +40,21 @@ export default function Notificacoes() {
     setProcessandoId(id);
     try {
       // Envia a avaliação para o backend (que dará ou tirará pontos do remetente)
-      await api.post(`/auth/notify/${id}`, { isMessageUtil: isValido });
+      const res = await api.post(`/auth/notify/${id}`, {
+        isMessageUtil: isValido,
+      });
+      // O back responde "...(Anônimo)!!" quando o remetente não estava logado:
+      // nesse caso nenhum ponto é alterado e o usuário precisa ser informado.
+      const foiAnonimo =
+        typeof res.data === "string" && res.data.includes("Anônimo");
 
       Alert.alert(
-        "Avaliação Enviada",
-        isValido
-          ? "Obrigado por confirmar. O remetente ganhou pontos de cidadão!"
-          : "Obrigado por avisar. O remetente foi penalizado por enviar alerta falso.",
+        "Avaliação enviada",
+        foiAnonimo
+          ? "Avaliação registrada. O remetente não estava identificado, então nenhum ponto foi alterado."
+          : isValido
+            ? "Obrigado por confirmar. O remetente ganhou pontos de cidadão!"
+            : "Obrigado por avisar. O remetente foi penalizado por enviar alerta falso.",
       );
 
       // Remove o alerta da lista visualmente sem precisar recarregar toda a API
@@ -74,40 +85,18 @@ export default function Notificacoes() {
     <SafeAreaView style={{ flex: 1, backgroundColor: "#0F172A" }}>
       <Stack.Screen options={{ headerShown: false }} />
 
-      {/* CABEÇALHO CORRIGIDO COM RESPONSIVIDADE */}
-      <XStack
-        px="$6"
-        pt="$8"
-        pb="$4"
-        jc="space-between"
-        ai="center"
-        accessible={true}
-        accessibilityRole="header"
-      >
-        <Text
-          f={1}
-          fontSize="$7"
-          fontWeight="bold"
-          color="white"
-          numberOfLines={1}
-          adjustsFontSizeToFit
-        >
-          Meus Alertas
-        </Text>
-        <Feather
-          name="refresh-cw"
-          size={20}
-          color="#94A3B8"
-          onPress={carregarAlertas}
-          accessible={true}
-          accessibilityRole="button"
-          accessibilityLabel="Atualizar lista de alertas"
-        />
-      </XStack>
+      <Cabecalho
+        titulo="Meus alertas"
+        acao={{
+          icone: "refresh-cw",
+          label: "Atualizar lista de alertas",
+          onPress: carregarAlertas,
+        }}
+      />
 
       {isLoading ? (
         <YStack f={1} jc="center" ai="center">
-          <Spinner size="large" color="$blue10" />
+          <Spinner size="large" color={cores.link} accessibilityLabel="Carregando alertas" accessibilityLiveRegion="polite" />
         </YStack>
       ) : (
         <ScrollView
@@ -119,9 +108,9 @@ export default function Notificacoes() {
               mt="$10"
               gap="$4"
               accessible={true}
-              accessibilityLabel="Nenhum alerta pendente."
+              accessibilityLabel="Você não possui nenhum alerta pendente de avaliação."
             >
-              <Feather name="bell-off" size={64} color="#334155" />
+              <Feather name="bell-off" size={64} color={cores.bordaControle} />
               <Text color="#94A3B8" fontSize="$4" textAlign="center">
                 Você não possui nenhum alerta pendente de avaliação.
               </Text>
@@ -136,15 +125,18 @@ export default function Notificacoes() {
                 mb="$4"
                 borderWidth={1}
                 borderColor="#334155"
-                accessible={true}
-                accessibilityLabel={`Alerta de ${alerta.destinatario} para o veículo ${alerta.notifyCarDTO?.modelo}. Mensagem: ${alerta.mensagem}`}
               >
-                {/* INFO DO CARRO E DATA */}
+                {/* Bloco informativo: lido como um grupo; os botões ficam fora dele
+                    para continuarem alcançáveis por leitor de tela e teclado */}
+                <YStack
+                  accessible={true}
+                  accessibilityLabel={`Novo alerta em ${formatarData(alerta.dataEnvio)} para o veículo ${alerta.notifyCarDTO?.modelo || "sem modelo"}, placa ${alerta.notifyCarDTO?.placa || "sem placa"}. Mensagem: ${alerta.mensagem}. Enviado por: ${alerta.citizienStatus === "Anônimo" ? "anônimo" : `usuário ${alerta.citizienStatus}`}.`}
+                >
                 <XStack jc="space-between" ai="flex-start" mb="$2">
                   <YStack f={1}>
                     <Text
-                      color="$blue10"
-                      fontSize="$2"
+                      color={cores.link}
+                      fontSize="$3"
                       fontWeight="bold"
                       mb="$1"
                     >
@@ -170,10 +162,10 @@ export default function Notificacoes() {
                   borderWidth={1}
                   borderColor="#334155"
                 >
-                  <Text color="#E2E8F0" fontSize="$4" fontStyle="italic">
+                  <Text color={cores.textoSuave} fontSize="$4" fontStyle="italic">
                     "{alerta.mensagem}"
                   </Text>
-                  <Text color="#64748B" fontSize="$2" mt="$2" textAlign="right">
+                  <Text color={cores.textoSecundario} fontSize="$3" mt="$2" textAlign="right">
                     Enviado por:{" "}
                     {alerta.citizienStatus === "Anônimo"
                       ? "Anônimo"
@@ -181,8 +173,10 @@ export default function Notificacoes() {
                   </Text>
                 </YStack>
 
+                </YStack>
+
                 {/* BOTÕES DE AVALIAÇÃO */}
-                <Text color="#94A3B8" fontSize="$3" mb="$2" textAlign="center">
+                <Text color={cores.textoSecundario} fontSize="$3" mb="$2" textAlign="center" accessibilityRole="header">
                   Este alerta foi realmente útil e verdadeiro?
                 </Text>
 
@@ -191,20 +185,20 @@ export default function Notificacoes() {
                     f={1}
                     size="$4"
                     bg="rgba(16, 185, 129, 0.15)"
-                    color="#10B981"
+                    color={cores.sucesso}
                     borderWidth={1}
-                    borderColor="#10B981"
+                    borderColor={cores.sucesso}
                     icon={
                       processandoId === alerta.id ? (
-                        () => <Spinner color="#10B981" />
+                        () => <Spinner color={cores.sucesso} />
                       ) : (
                         <Feather name="check" size={18} />
                       )
                     }
                     disabled={processandoId === alerta.id}
                     onPress={() => avaliarAlerta(alerta.id, true)}
-                    accessibilityRole="button"
-                    accessibilityLabel="Aprovar alerta. Dar pontos ao remetente."
+                    accessibilityLabel="Sim, foi útil. Dá pontos ao remetente."
+                    accessibilityState={{ disabled: processandoId === alerta.id, busy: processandoId === alerta.id }}
                   >
                     Sim, foi útil
                   </Button>
@@ -213,20 +207,20 @@ export default function Notificacoes() {
                     f={1}
                     size="$4"
                     bg="rgba(239, 68, 68, 0.15)"
-                    color="#EF4444"
+                    color={cores.erro}
                     borderWidth={1}
-                    borderColor="#EF4444"
+                    borderColor={cores.erro}
                     icon={
                       processandoId === alerta.id ? (
-                        () => <Spinner color="#EF4444" />
+                        () => <Spinner color={cores.erro} />
                       ) : (
                         <Feather name="x" size={18} />
                       )
                     }
                     disabled={processandoId === alerta.id}
                     onPress={() => avaliarAlerta(alerta.id, false)}
-                    accessibilityRole="button"
-                    accessibilityLabel="Rejeitar alerta como falso. Retirar pontos do remetente."
+                    accessibilityLabel="Alerta falso. Retira pontos do remetente."
+                    accessibilityState={{ disabled: processandoId === alerta.id, busy: processandoId === alerta.id }}
                   >
                     Alerta Falso
                   </Button>
@@ -237,73 +231,7 @@ export default function Notificacoes() {
         </ScrollView>
       )}
 
-      {/* BARRA DE NAVEGAÇÃO INFERIOR PADRONIZADA */}
-      <XStack
-        bg="#0F172A"
-        pt="$3"
-        pb={Math.max(insets.bottom, 20)}
-        px="$6"
-        jc="space-between"
-        borderTopWidth={1}
-        borderTopColor="#1E293B"
-      >
-        <YStack
-          ai="center"
-          gap="$1"
-          opacity={0.5}
-          onPress={() => router.replace("/home")}
-          accessible={true}
-          accessibilityRole="button"
-          accessibilityLabel="Aba Home"
-        >
-          <Feather name="home" size={24} color="white" />
-          <Text color="white" fontSize={10}>
-            Home
-          </Text>
-        </YStack>
-        <YStack
-          ai="center"
-          gap="$1"
-          opacity={0.5}
-          onPress={() => router.replace("/mensagens")}
-          accessible={true}
-          accessibilityRole="button"
-          accessibilityLabel="Aba Chats"
-        >
-          <Feather name="message-circle" size={24} color="white" />
-          <Text color="white" fontSize={10}>
-            Chats
-          </Text>
-        </YStack>
-        <YStack
-          ai="center"
-          gap="$1"
-          opacity={1}
-          onPress={() => router.replace("/notificacoes")}
-          accessible={true}
-          accessibilityRole="button"
-          accessibilityLabel="Aba atual: Alertas"
-        >
-          <Feather name="bell" size={24} color="white" />
-          <Text color="white" fontSize={10}>
-            Alertas
-          </Text>
-        </YStack>
-        <YStack
-          ai="center"
-          gap="$1"
-          opacity={0.5}
-          onPress={() => router.replace("/carros")}
-          accessible={true}
-          accessibilityRole="button"
-          accessibilityLabel="Aba Carros"
-        >
-          <Ionicons name="car-sport" size={26} color="white" />
-          <Text color="white" fontSize={10}>
-            Carros
-          </Text>
-        </YStack>
-      </XStack>
+      <BottomTabBar ativa="notificacoes" />
     </SafeAreaView>
   );
 }

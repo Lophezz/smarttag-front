@@ -3,8 +3,8 @@ import "react-native-url-polyfill/auto";
 import * as encoding from "text-encoding";
 
 // Injeção global forçada para que o Android não falhe na codificação das mensagens
-if (typeof global.TextEncoder === "undefined") {
-  global.TextEncoder = encoding.TextEncoder;
+if (typeof globalThis.TextEncoder === "undefined") {
+  (globalThis as any).TextEncoder = encoding.TextEncoder;
 }
 if (typeof globalThis.TextEncoder === "undefined") {
   (globalThis as any).TextEncoder = encoding.TextEncoder;
@@ -23,6 +23,7 @@ import {
   Platform,
   ScrollView,
   Keyboard,
+  AccessibilityInfo,
 } from "react-native";
 import { Alert } from "../../services/alert";
 import {
@@ -34,6 +35,8 @@ import { Feather } from "@expo/vector-icons";
 import { useLocalSearchParams, router, Stack } from "expo-router";
 import { Client } from "@stomp/stompjs";
 import api from "../../services/api";
+import IconButton from "../../components/a11y/IconButton";
+import { cores } from "../../components/a11y/colors";
 
 export default function Chat() {
   const insets = useSafeAreaInsets();
@@ -47,6 +50,7 @@ export default function Chat() {
 
   const scrollViewRef = useRef<ScrollView>(null);
   const stompClientRef = useRef<Client | null>(null);
+  const mensagensVistas = useRef<Set<string>>(new Set());
 
   useEffect(() => {
     carregarHistorico();
@@ -62,6 +66,9 @@ export default function Chat() {
   const carregarHistorico = async () => {
     try {
       const response = await api.get(`/messages/history/${sessionId}`);
+      response.data.forEach((m: any) =>
+        mensagensVistas.current.add(`${m.dataHora}|${m.conteudo}`),
+      );
       setMensagens(response.data);
       scrollParaOFinal();
     } catch (error: any) {
@@ -138,45 +145,47 @@ export default function Chat() {
     stompClientRef.current = client;
   };
 
+  const ehMinha = (msg: any) =>
+    isAnonimo === "true"
+      ? msg.remetente !== "Dono do carro"
+      : msg.remetente === "Dono do carro";
+
   const adicionarMensagem = (novaMsg: any) => {
-    setMensagens((prev) => {
-      const existe = prev.some(
-        (m) =>
-          m.dataHora === novaMsg.dataHora && m.conteudo === novaMsg.conteudo,
+    // Evita duplicar a mensagem na tela e também o anúncio por voz
+    const chave = `${novaMsg.dataHora}|${novaMsg.conteudo}`;
+    if (mensagensVistas.current.has(chave)) return;
+    mensagensVistas.current.add(chave);
+
+    setMensagens((prev) => [...prev, novaMsg]);
+
+    // Leitores de tela não percebem mensagens que chegam sozinhas: anunciamos (SC 4.1.3)
+    if (!ehMinha(novaMsg)) {
+      AccessibilityInfo.announceForAccessibility(
+        `Nova mensagem de ${novaMsg.remetente}: ${novaMsg.conteudo}`,
       );
-      if (existe) return prev;
-      return [...prev, novaMsg];
-    });
+    }
     scrollParaOFinal();
   };
 
   const enviarMensagem = () => {
     if (!inputText.trim() || !stompClientRef.current?.connected) return;
 
-    // 1. Cria a mensagem no formato exato que a API usa
-    const novaMensagemLocal = {
-      conteudo: inputText.trim(),
-      idSessao: sessionId,
-      qrcode: qrcode,
-      remetente: isAnonimo === "true" ? "Anônimo" : "Dono do carro",
-      dataHora: new Date().toISOString(), // Grava a hora atual
-    };
+    const conteudo = inputText.trim();
 
     try {
-      // 2. ADICIONA À TELA IMEDIATAMENTE (Atualização Otimista)
-      adicionarMensagem(novaMensagemLocal);
-
-      // 3. Limpa o input e fecha o teclado
+      // A mensagem volta pelo WebSocket após ser salva pelo servidor. Não a
+      // incluímos antes disso, pois o servidor pode normalizar data/hora e a
+      // cópia local deixaria de ser reconhecida pela deduplicação.
       setInputText("");
       Keyboard.dismiss();
 
-      // 4. Manda para o servidor silenciosamente em background
+      // Envia para o servidor; a confirmação recebida atualiza a conversa.
       stompClientRef.current.publish({
         destination: `/app/chat/${qrcode}`,
         body: JSON.stringify({
-          conteudo: novaMensagemLocal.conteudo,
-          idSessao: novaMensagemLocal.idSessao,
-          qrcode: novaMensagemLocal.qrcode,
+          conteudo,
+          idSessao: sessionId,
+          qrcode,
         }),
       });
     } catch (error) {
@@ -202,46 +211,47 @@ export default function Chat() {
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         keyboardVerticalOffset={Platform.OS === "ios" ? 90 : 25}
       >
-        {/* CABEÇALHO DO CHAT */}
+        {/* CABEÇALHO DO CHAT: o papel "header" fica só no título, para o botão
+            Voltar continuar alcançável por leitor de tela e teclado */}
         <XStack
-          bg="#1E293B"
-          px="$4"
+          bg={cores.cartao}
+          px="$2"
           pt={Math.max(insets.top, 16)}
-          pb="$4"
+          pb="$3"
           ai="center"
           borderBottomWidth={1}
-          borderBottomColor="#334155"
-          accessible={true}
-          accessibilityRole="header"
+          borderBottomColor={cores.bordaCartao}
         >
-          <Feather
-            name="arrow-left"
-            size={24}
-            color="#94A3B8"
-            onPress={() => router.back()}
-            accessibilityRole="button"
-            accessibilityLabel="Voltar"
-          />
-          <YStack f={1} ml="$4">
+          <IconButton label="Voltar" onPress={() => router.back()}>
+            <Feather name="arrow-left" size={24} color={cores.textoSuave} />
+          </IconButton>
+          <YStack f={1} ml="$2">
             <Text
               color="white"
               fontSize="$5"
               fontWeight="bold"
               numberOfLines={1}
+              accessibilityRole="header"
             >
               {modelo}
             </Text>
             <XStack ai="center" gap="$2">
-              <Text color="#94A3B8" fontSize="$3">
-                {placa}
+              <Text color={cores.textoSecundario} fontSize="$3">
+                Placa {placa}
               </Text>
+              {/* Estado de conexão: texto + cor, anunciado quando muda (SC 1.4.1, 4.1.3) */}
               <YStack
                 width={8}
                 height={8}
                 br={4}
-                bg={isConnected ? "#10B981" : "#EF4444"}
+                bg={isConnected ? cores.sucesso : cores.erro}
+                importantForAccessibility="no"
               />
-              <Text color={isConnected ? "#10B981" : "#EF4444"} fontSize={10}>
+              <Text
+                color={isConnected ? cores.sucesso : cores.erro}
+                fontSize={12}
+                accessibilityLiveRegion="polite"
+              >
                 {isConnected ? "Online" : "Conectando..."}
               </Text>
             </XStack>
@@ -251,8 +261,8 @@ export default function Chat() {
         {/* LISTA DE MENSAGENS */}
         {isLoading ? (
           <YStack f={1} jc="center" ai="center">
-            <Spinner size="large" color="$blue10" />
-            <Text color="#94A3B8" mt="$4">
+            <Spinner size="large" color={cores.link} />
+            <Text color={cores.textoSecundario} mt="$4" accessibilityLiveRegion="polite">
               A carregar conversa...
             </Text>
           </YStack>
@@ -267,10 +277,7 @@ export default function Chat() {
             onContentSizeChange={scrollParaOFinal}
           >
             {mensagens.map((msg, index) => {
-              const isMinha =
-                isAnonimo === "true"
-                  ? msg.remetente !== "Dono do carro"
-                  : msg.remetente === "Dono do carro";
+              const isMinha = ehMinha(msg);
 
               return (
                 <XStack
@@ -278,11 +285,11 @@ export default function Chat() {
                   jc={isMinha ? "flex-end" : "flex-start"}
                   mb="$3"
                   accessible={true}
-                  accessibilityLabel={`Mensagem de ${msg.remetente}: ${msg.conteudo}`}
+                  accessibilityLabel={`${isMinha ? "Você" : msg.remetente}, às ${new Date(msg.dataHora || msg.data).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}: ${msg.conteudo}`}
                 >
                   <YStack
                     maxWidth="80%"
-                    bg={isMinha ? "$blue10" : "#1E293B"}
+                    bg={isMinha ? cores.botaoPrimario : cores.cartao}
                     p="$3"
                     br="$4"
                     borderBottomRightRadius={isMinha ? 0 : "$4"}
@@ -290,8 +297,8 @@ export default function Chat() {
                   >
                     {!isMinha && (
                       <Text
-                        color="#94A3B8"
-                        fontSize={10}
+                        color={cores.textoSecundario}
+                        fontSize={12}
                         mb="$1"
                         fontWeight="bold"
                       >
@@ -302,8 +309,8 @@ export default function Chat() {
                       {msg.conteudo}
                     </Text>
                     <Text
-                      color={isMinha ? "rgba(255,255,255,0.7)" : "#64748B"}
-                      fontSize={10}
+                      color={isMinha ? "#F1F5F9" : cores.textoSecundario}
+                      fontSize={12}
                       mt="$1"
                       ta={isMinha ? "right" : "left"}
                     >
@@ -335,18 +342,22 @@ export default function Chat() {
             value={inputText}
             onChangeText={setInputText}
             placeholder="Digite a sua mensagem..."
-            placeholderTextColor={"#64748B" as any}
+            placeholderTextColor={cores.textoSecundario as any}
             bg="#0F172A"
             color="white"
-            borderColor="#334155"
+            borderColor={cores.bordaControle}
             br="$4"
             disabled={!isConnected}
             accessibilityLabel="Escreva uma mensagem"
+            accessibilityHint={isConnected ? undefined : "Aguardando conexão com o chat"}
+            autoComplete="off"
+            returnKeyType="send"
+            onSubmitEditing={enviarMensagem}
           />
           <Button
             size="$4"
             circular
-            bg={inputText.trim() ? "$blue10" : "#334155"}
+            bg={inputText.trim() ? cores.botaoPrimario : cores.botaoNeutro}
             disabled={!inputText.trim() || !isConnected}
             onPress={enviarMensagem}
             accessibilityRole="button"
@@ -355,7 +366,7 @@ export default function Chat() {
             <Feather
               name="send"
               size={20}
-              color={inputText.trim() ? "white" : "#94A3B8"}
+              color={inputText.trim() ? "white" : cores.textoSuave}
             />
           </Button>
         </XStack>

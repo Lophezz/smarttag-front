@@ -12,6 +12,11 @@ import { Feather, Ionicons } from "@expo/vector-icons";
 import { router, useFocusEffect, Stack } from "expo-router";
 import * as ImagePicker from "expo-image-picker";
 import QRCode from "react-native-qrcode-svg";
+import BottomTabBar from "../components/a11y/BottomTabBar";
+import Cabecalho from "../components/a11y/Cabecalho";
+import FormField from "../components/a11y/FormField";
+import IconButton from "../components/a11y/IconButton";
+import { cores } from "../components/a11y/colors";
 import api from "../services/api";
 import * as ImageManipulator from "expo-image-manipulator";
 
@@ -325,36 +330,10 @@ const selecionarImagem = async () => {
     <SafeAreaView style={{ flex: 1, backgroundColor: "#0F172A" }}>
       <Stack.Screen options={{ headerShown: false }} />
 
-      <XStack
-        px="$6"
-        pt="$8"
-        pb="$4"
-        jc="space-between"
-        ai="center"
-        accessible={true}
-        accessibilityRole="header"
-      >
-        <Text
-          f={1}
-          fontSize="$7"
-          fontWeight="bold"
-          color="white"
-          numberOfLines={1}
-          adjustsFontSizeToFit
-        >
-          Meus Carros
-        </Text>
-        <Button
-          size="$3"
-          bg="$blue10"
-          color="white"
-          circular
-          icon={<Feather name="plus" size={20} />}
-          onPress={abrirModalNovo}
-          accessibilityRole="button"
-          accessibilityLabel="Adicionar novo veículo"
-        />
-      </XStack>
+      <Cabecalho
+        titulo="Meus carros"
+        acao={{ icone: "plus", label: "Adicionar novo veículo", onPress: abrirModalNovo }}
+      />
 
       <XStack
         mx="$6"
@@ -365,36 +344,33 @@ const selecionarImagem = async () => {
         bg="#1E293B"
         br="$4"
         borderWidth={1}
-        borderColor="#334155"
+        borderColor={cores.bordaControle}
       >
-        <Feather name="search" size={18} color="#94A3B8" />
+        <Feather name="search" size={18} color={cores.textoSecundario} accessibilityElementsHidden importantForAccessibility="no" />
         <Input
           f={1}
           unstyled
           value={busca}
           onChangeText={setBusca}
           placeholder="Pesquisar por placa"
-          placeholderTextColor={"#64748B" as any}
+          placeholderTextColor={cores.textoSecundario as any}
           color="white"
           autoCapitalize="characters"
           autoCorrect={false}
           maxLength={8}
-          accessibilityLabel="Campo de pesquisa de carros por placa"
+          accessibilityLabel="Pesquisar por placa"
+          returnKeyType="search"
         />
         {busca.length > 0 && (
-          <TouchableOpacity
-            onPress={() => setBusca("")}
-            accessibilityRole="button"
-            accessibilityLabel="Limpar pesquisa"
-          >
-            <Feather name="x" size={18} color="#94A3B8" />
-          </TouchableOpacity>
+          <IconButton label="Limpar pesquisa" onPress={() => setBusca("")}>
+            <Feather name="x" size={18} color={cores.textoSecundario} />
+          </IconButton>
         )}
       </XStack>
 
       {isLoading ? (
         <YStack f={1} jc="center" ai="center">
-          <Spinner size="large" color="$blue10" />
+          <Spinner size="large" color={cores.link} accessibilityLabel="Carregando veículos" accessibilityLiveRegion="polite" />
         </YStack>
       ) : (
         <ScrollView
@@ -408,7 +384,7 @@ const selecionarImagem = async () => {
               accessible={true}
               accessibilityLabel="Você não possui nenhum veículo cadastrado"
             >
-              <Ionicons name="car-sport-outline" size={64} color="#334155" />
+              <Ionicons name="car-sport-outline" size={64} color={cores.bordaControle} />
               <Text color="#94A3B8" fontSize="$4">
                 Nenhum carro cadastrado.
               </Text>
@@ -421,7 +397,7 @@ const selecionarImagem = async () => {
               accessible={true}
               accessibilityLabel="Nenhum carro encontrado para esta placa"
             >
-              <Feather name="search" size={48} color="#334155" />
+              <Feather name="search" size={48} color={cores.bordaControle} />
               <Text color="#94A3B8" fontSize="$4">
                 Nenhum carro encontrado para essa placa.
               </Text>
@@ -453,7 +429,7 @@ const selecionarImagem = async () => {
                     jc="center"
                     ai="center"
                   >
-                    <Ionicons name="car" size={48} color="#334155" />
+                    <Ionicons name="car" size={48} color={cores.bordaControle} accessibilityElementsHidden importantForAccessibility="no" />
                   </YStack>
                 )}
 
@@ -465,10 +441,11 @@ const selecionarImagem = async () => {
                         fontSize="$5"
                         fontWeight="bold"
                         numberOfLines={1}
+                        accessibilityRole="header"
                       >
                         {carro.modelo}
                       </Text>
-                      <Text color="#94A3B8" fontSize="$3">
+                      <Text color={cores.textoSecundario} fontSize="$3">
                         {carro.ano} • Placa: {carro.placa}
                       </Text>
                     </YStack>
@@ -478,7 +455,7 @@ const selecionarImagem = async () => {
                       activeOpacity={0.7}
                       accessible={true}
                       accessibilityRole="button"
-                      accessibilityLabel="Tocar para ampliar o código QR deste veículo"
+                      accessibilityLabel={`Tocar para ampliar o código QR do veículo ${carro.modelo}, placa ${carro.placa}`}
                     >
                       <YStack ai="center" bg="white" p="$2" br="$2">
                         <QRCode
@@ -487,7 +464,7 @@ const selecionarImagem = async () => {
                         />
                         <Text
                           color="black"
-                          fontSize={9}
+                          fontSize={11}
                           mt="$1"
                           fontWeight="bold"
                         >
@@ -506,9 +483,9 @@ const selecionarImagem = async () => {
                           ? "rgba(16, 185, 129, 0.15)"
                           : "rgba(239, 68, 68, 0.15)"
                       }
-                      color={carro.AllowAlert ? "#10B981" : "#EF4444"}
+                      color={carro.AllowAlert ? cores.sucesso : cores.erro}
                       borderWidth={1}
-                      borderColor={carro.AllowAlert ? "#10B981" : "#EF4444"}
+                      borderColor={carro.AllowAlert ? cores.sucesso : cores.erro}
                       icon={
                         <Feather
                           name={carro.AllowAlert ? "bell" : "bell-off"}
@@ -518,11 +495,10 @@ const selecionarImagem = async () => {
                       onPress={() =>
                         alternarModoPrivacidade(carro.id, carro.AllowAlert)
                       }
-                      accessibilityRole="button"
                       accessibilityLabel={
                         carro.AllowAlert
-                          ? "Bloquear alertas (Ativar modo privacidade)"
-                          : "Permitir alertas (Desativar modo privacidade)"
+                          ? `Alertas ON do veículo ${carro.modelo}. Toque para bloquear alertas e ativar o modo privacidade`
+                          : `Alertas OFF do veículo ${carro.modelo}. Toque para permitir alertas e desativar o modo privacidade`
                       }
                     >
                       {carro.AllowAlert ? "Alertas ON" : "Alertas OFF"}
@@ -534,8 +510,8 @@ const selecionarImagem = async () => {
                       color="white"
                       icon={<Ionicons name="qr-code-outline" size={16} />}
                       onPress={() => gerarNovoQrCode(carro.id)}
-                      accessibilityRole="button"
-                      accessibilityLabel="Gerar novo código QR"
+                      accessibilityLabel={`Novo QR para o veículo ${carro.modelo}, placa ${carro.placa}`}
+                      accessibilityHint="O código QR atual deixará de funcionar"
                     >
                       Novo QR
                     </Button>
@@ -550,8 +526,7 @@ const selecionarImagem = async () => {
                       borderWidth={1}
                       borderColor="#334155"
                       onPress={() => abrirModalEditar(carro)}
-                      accessibilityRole="button"
-                      accessibilityLabel="Editar veículo"
+                      accessibilityLabel={`Editar veículo ${carro.modelo}, placa ${carro.placa}`}
                     >
                       Editar
                     </Button>
@@ -559,12 +534,11 @@ const selecionarImagem = async () => {
                       f={1}
                       size="$3"
                       bg="transparent"
-                      color="$red10"
+                      color={cores.erro}
                       borderWidth={1}
-                      borderColor="$red10"
+                      borderColor={cores.erro}
                       onPress={() => deletarCarro(carro.id)}
-                      accessibilityRole="button"
-                      accessibilityLabel="Apagar veículo"
+                      accessibilityLabel={`Apagar veículo ${carro.modelo}, placa ${carro.placa}`}
                     >
                       Apagar
                     </Button>
@@ -576,7 +550,12 @@ const selecionarImagem = async () => {
         </ScrollView>
       )}
 
-      <Modal visible={!!qrCodeAmpliado} animationType="fade" transparent={true}>
+      <Modal
+        visible={!!qrCodeAmpliado}
+        animationType="fade"
+        transparent={true}
+        onRequestClose={() => setQrCodeAmpliado(null)}
+      >
         <YStack f={1} bg="rgba(0, 0, 0, 0.85)" jc="center" ai="center" px="$6">
           <YStack
             bg="white"
@@ -585,21 +564,28 @@ const selecionarImagem = async () => {
             ai="center"
             gap="$4"
             width="100%"
-            accessible={true}
             accessibilityViewIsModal={true}
           >
-            <Text fontSize="$5" fontWeight="bold" color="#0F172A">
+            <Text fontSize="$5" fontWeight="bold" color="#0F172A" accessibilityRole="header">
               O seu SmartTag
             </Text>
             {qrCodeAmpliado && (
-              <YStack p="$2" borderWidth={2} borderColor="#E2E8F0" br="$2">
+              <YStack
+                p="$2"
+                borderWidth={2}
+                borderColor="#E2E8F0"
+                br="$2"
+                accessible
+                accessibilityRole="image"
+                accessibilityLabel="Código QR do seu SmartTag. Ao ser lido, abre a página para enviar alertas ao seu veículo."
+              >
                 <QRCode
                   value={`https://smarttag-front.vercel.app/alerta/${qrCodeAmpliado}`}
                   size={220}
                 />
               </YStack>
             )}
-            <Text color="#64748B" fontSize="$3" textAlign="center" mt="$2">
+            <Text color="#475569" fontSize="$3" textAlign="center" mt="$2">
               Qualquer pessoa pode apontar a câmera para este código para lhe
               enviar alertas anônimos.
             </Text>
@@ -608,7 +594,7 @@ const selecionarImagem = async () => {
               size="$4"
               mt="$2"
               width="100%"
-              bg="#10B981"
+              bg="#047857"
               color="white"
               disabled={isSavingQr}
               icon={
@@ -619,8 +605,8 @@ const selecionarImagem = async () => {
                 )
               }
               onPress={baixarQrCode}
-              accessibilityRole="button"
-              accessibilityLabel="Baixar QR Code como imagem para imprimir"
+              accessibilityHint="Salva o QR Code como imagem para você imprimir"
+              accessibilityState={{ busy: isSavingQr, disabled: isSavingQr }}
             >
               {isSavingQr ? "Salvando..." : "Baixar para imprimir"}
             </Button>
@@ -628,11 +614,9 @@ const selecionarImagem = async () => {
             <Button
               size="$4"
               width="100%"
-              bg="$blue10"
+              bg={cores.botaoPrimario}
               color="white"
               onPress={() => setQrCodeAmpliado(null)}
-              accessibilityRole="button"
-              accessibilityLabel="Fechar ampliação do código QR"
             >
               Fechar
             </Button>
@@ -657,7 +641,12 @@ const selecionarImagem = async () => {
         </YStack>
       </Modal>
 
-      <Modal visible={modalVisible} animationType="slide" transparent={true}>
+      <Modal
+        visible={modalVisible}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setModalVisible(false)}
+      >
         <YStack f={1} bg="rgba(15, 23, 42, 0.95)" jc="flex-end">
           <YStack
             bg="#1E293B"
@@ -665,37 +654,26 @@ const selecionarImagem = async () => {
             borderTopLeftRadius={24}
             borderTopRightRadius={24}
             gap="$4"
-            accessible={true}
             accessibilityViewIsModal={true}
           >
             <XStack jc="space-between" ai="center" mb="$2">
-              <Text color="white" fontSize="$6" fontWeight="bold">
-                {editingId ? "Editar Veículo" : "Novo Veículo"}
+              <Text color="white" fontSize="$6" fontWeight="bold" accessibilityRole="header">
+                {editingId ? "Editar veículo" : "Novo veículo"}
               </Text>
-              <Feather
-                name="x"
-                size={24}
-                color="#94A3B8"
-                onPress={() => setModalVisible(false)}
-                accessibilityRole="button"
-                accessibilityLabel="Fechar formulário de veículo"
-              />
+              <IconButton label="Fechar formulário de veículo" onPress={() => setModalVisible(false)}>
+                <Feather name="x" size={24} color={cores.textoSuave} />
+              </IconButton>
             </XStack>
 
             <YStack gap="$2" ai="center" mb="$2">
               <Button
                 size="$3"
-                bg="#334155"
+                bg={cores.botaoNeutro}
                 color="white"
                 onPress={selecionarImagem}
-                accessibilityRole="button"
-                accessibilityLabel={
-                  formData.imagem
-                    ? "Trocar Imagem do veículo"
-                    : "Selecionar Imagem do Carro da galeria"
-                }
+                accessibilityHint="Abre a galeria para escolher a foto do veículo"
               >
-                {formData.imagem ? "Trocar Imagem" : "Selecionar Imagem"}
+                {formData.imagem ? "Trocar imagem" : "Selecionar imagem"}
               </Button>
               {formData.imagem && (
                 <Image
@@ -712,144 +690,56 @@ const selecionarImagem = async () => {
               )}
             </YStack>
 
-            <YStack gap="$2">
-              <Label color="white" htmlFor="modelo">
-                Modelo
-              </Label>
-              <Input
-                id="modelo"
-                value={formData.modelo}
-                onChangeText={(t) => setFormData({ ...formData, modelo: t })}
-                bg="#0F172A"
-                color="white"
-                borderColor="$gray6"
-                accessibilityLabel="Campo de entrada para o modelo do carro"
-              />
-            </YStack>
+            <FormField
+              id="carro-modelo"
+              label="Modelo"
+              value={formData.modelo}
+              onChangeText={(t) => setFormData({ ...formData, modelo: t })}
+              autoComplete="off"
+            />
 
             <XStack gap="$4">
-              <YStack f={1} gap="$2">
-                <Label color="white" htmlFor="ano">
-                  Ano
-                </Label>
-                <Input
-                  id="ano"
+              <YStack f={1}>
+                <FormField
+                  id="carro-ano"
+                  label="Ano"
                   value={formData.ano}
                   onChangeText={(t) => setFormData({ ...formData, ano: t })}
                   keyboardType="numeric"
-                  bg="#0F172A"
-                  color="white"
-                  borderColor="$gray6"
-                  accessibilityLabel="Campo de entrada para o ano do carro"
+                  autoComplete="off"
                 />
               </YStack>
-              <YStack f={1} gap="$2">
-                <Label color="white" htmlFor="placa">
-                  Placa
-                </Label>
-                <Input
-                  id="placa"
+              <YStack f={1}>
+                <FormField
+                  id="carro-placa"
+                  label="Placa"
                   value={formData.placa}
                   onChangeText={(t) => setFormData({ ...formData, placa: t })}
                   autoCapitalize="characters"
-                  bg="#0F172A"
-                  color="white"
-                  borderColor="$gray6"
-                  accessibilityLabel="Campo de entrada para a placa do carro"
-                  accessibilityHint="Deve estar no formato ABC-1234 ou ABC1A23"
+                  autoComplete="off"
+                  helper="Formato ABC-1234 ou ABC1A23"
                 />
               </YStack>
             </XStack>
 
             <Button
               size="$5"
-              bg="$blue10"
+              bg={cores.botaoPrimario}
               color="white"
               fontWeight="700"
               mt="$4"
               onPress={salvarCarro}
               disabled={isSubmitting}
               icon={isSubmitting ? () => <Spinner color="white" /> : undefined}
-              accessibilityRole="button"
-              accessibilityLabel={
-                editingId
-                  ? "Guardar alterações do veículo"
-                  : "Adicionar novo veículo"
-              }
+              accessibilityState={{ busy: isSubmitting, disabled: isSubmitting }}
             >
-              {isSubmitting ? "A Guardar..." : "Guardar Veículo"}
+              {isSubmitting ? "A guardar..." : "Guardar veículo"}
             </Button>
           </YStack>
         </YStack>
       </Modal>
 
-      {/* BARRA DE NAVEGAÇÃO INFERIOR */}
-      <XStack
-        bg="#0F172A"
-        pt="$3"
-        pb={Math.max(insets.bottom, 20)}
-        px="$6"
-        jc="space-between"
-        borderTopWidth={1}
-        borderTopColor="#1E293B"
-      >
-        <YStack
-          ai="center"
-          gap="$1"
-          opacity={0.5}
-          onPress={() => router.replace("/home")}
-          accessible={true}
-          accessibilityRole="button"
-          accessibilityLabel="Aba Home"
-        >
-          <Feather name="home" size={24} color="white" />
-          <Text color="white" fontSize={10}>
-            Home
-          </Text>
-        </YStack>
-        <YStack
-          ai="center"
-          gap="$1"
-          opacity={0.5}
-          onPress={() => router.replace("/mensagens")}
-          accessible={true}
-          accessibilityRole="button"
-          accessibilityLabel="Aba Chats"
-        >
-          <Feather name="message-circle" size={24} color="white" />
-          <Text color="white" fontSize={10}>
-            Chats
-          </Text>
-        </YStack>
-        <YStack
-          ai="center"
-          gap="$1"
-          opacity={0.5}
-          onPress={() => router.replace("/notificacoes")}
-          accessible={true}
-          accessibilityRole="button"
-          accessibilityLabel="Aba Alertas"
-        >
-          <Feather name="bell" size={24} color="white" />
-          <Text color="white" fontSize={10}>
-            Alertas
-          </Text>
-        </YStack>
-        <YStack
-          ai="center"
-          gap="$1"
-          opacity={1}
-          onPress={() => router.replace("/carros")}
-          accessible={true}
-          accessibilityRole="button"
-          accessibilityLabel="Aba atual: Carros"
-        >
-          <Ionicons name="car-sport" size={26} color="white" />
-          <Text color="white" fontSize={10}>
-            Carros
-          </Text>
-        </YStack>
-      </XStack>
+      <BottomTabBar ativa="carros" />
     </SafeAreaView>
   );
 }

@@ -6,6 +6,9 @@ import { YStack, XStack, Text, Spinner } from "tamagui";
 import { Feather, Ionicons } from "@expo/vector-icons";
 import { router, useFocusEffect, Stack } from "expo-router";
 import api from "../services/api";
+import BottomTabBar from "../components/a11y/BottomTabBar";
+import Cabecalho from "../components/a11y/Cabecalho";
+import { cores } from "../components/a11y/colors";
 
 export default function Mensagens() {
   const insets = useSafeAreaInsets();
@@ -67,39 +70,18 @@ export default function Mensagens() {
     <SafeAreaView style={{ flex: 1, backgroundColor: "#0F172A" }}>
       <Stack.Screen options={{ headerShown: false }} />
 
-      {/* CABEÇALHO */}
-      <XStack
-        px="$6"
-        pt="$8"
-        pb="$4"
-        jc="space-between"
-        ai="center"
-        accessible={true}
-        accessibilityRole="header"
-      >
-        <Text
-          f={1}
-          fontSize="$7"
-          fontWeight="bold"
-          color="white"
-          numberOfLines={1}
-          adjustsFontSizeToFit
-        >
-          Minhas Conversas
-        </Text>
-        <Feather
-          name="refresh-cw"
-          size={20}
-          color="#94A3B8"
-          onPress={carregarConversas}
-          accessibilityRole="button"
-          accessibilityLabel="Atualizar conversas"
-        />
-      </XStack>
+      <Cabecalho
+        titulo="Minhas conversas"
+        acao={{
+          icone: "refresh-cw",
+          label: "Atualizar conversas",
+          onPress: carregarConversas,
+        }}
+      />
 
       {isLoading ? (
         <YStack f={1} jc="center" ai="center">
-          <Spinner size="large" color="$blue10" />
+          <Spinner size="large" color={cores.link} accessibilityLabel="Carregando conversas" accessibilityLiveRegion="polite" />
         </YStack>
       ) : (
         <ScrollView
@@ -113,7 +95,7 @@ export default function Mensagens() {
               accessible={true}
               accessibilityLabel="Nenhuma conversa ativa encontrada."
             >
-              <Feather name="message-square" size={64} color="#334155" />
+              <Feather name="message-square" size={64} color={cores.bordaControle} />
               <Text color="#94A3B8" fontSize="$4">
                 Você não tem mensagens recentes.
               </Text>
@@ -133,8 +115,8 @@ export default function Mensagens() {
                 }
                 accessible={true}
                 accessibilityRole="button"
-                accessibilityLabel={`Conversa sobre o veículo ${conversa.modeloCarro}, placa ${conversa.placaCarro}. Última mensagem de ${conversa.sender}: ${conversa.conteudo}`}
-                accessibilityHint="Tocar para abrir a sala de chat"
+                accessibilityLabel={`${!conversa.lido ? "Não lida. " : ""}Conversa sobre o veículo ${conversa.modeloCarro}, placa ${conversa.placaCarro}. Última mensagem de ${conversa.sender}: ${conversa.conteudo}`}
+                accessibilityHint="Abre a sala de chat"
               >
                 <XStack
                   bg="#1E293B"
@@ -152,6 +134,8 @@ export default function Mensagens() {
                       source={{ uri: conversa.linkImageCarro }}
                       style={{ width: 56, height: 56, borderRadius: 28 }}
                       accessible={false}
+                      importantForAccessibility="no"
+                      accessibilityElementsHidden
                     />
                   ) : (
                     <YStack
@@ -162,7 +146,7 @@ export default function Mensagens() {
                       jc="center"
                       ai="center"
                     >
-                      <Ionicons name="car" size={24} color="#94A3B8" />
+                      <Ionicons name="car" size={24} color={cores.textoSecundario} />
                     </YStack>
                   )}
 
@@ -179,7 +163,7 @@ export default function Mensagens() {
                       >
                         {conversa.modeloCarro} ({conversa.placaCarro})
                       </Text>
-                      <Text color="#64748B" fontSize="$2">
+                      <Text color={cores.textoSecundario} fontSize="$3">
                         {formatarData(conversa.dataHora)}
                       </Text>
                     </XStack>
@@ -198,8 +182,9 @@ export default function Mensagens() {
                       width={10}
                       height={10}
                       br={5}
-                      bg="$blue10"
+                      bg={cores.link}
                       ml="$2"
+                      importantForAccessibility="no"
                     />
                   )}
                 </XStack>
@@ -209,73 +194,7 @@ export default function Mensagens() {
         </ScrollView>
       )}
 
-      {/* BARRA DE NAVEGAÇÃO INFERIOR */}
-      <XStack
-        bg="#0F172A"
-        pt="$3"
-        pb={Math.max(insets.bottom, 20)}
-        px="$6"
-        jc="space-between"
-        borderTopWidth={1}
-        borderTopColor="#1E293B"
-      >
-        <YStack
-          ai="center"
-          gap="$1"
-          opacity={0.5}
-          onPress={() => router.replace("/home")}
-          accessible={true}
-          accessibilityRole="button"
-          accessibilityLabel="Aba Home"
-        >
-          <Feather name="home" size={24} color="white" />
-          <Text color="white" fontSize={10}>
-            Home
-          </Text>
-        </YStack>
-        <YStack
-          ai="center"
-          gap="$1"
-          opacity={1}
-          onPress={() => router.replace("/mensagens")}
-          accessible={true}
-          accessibilityRole="button"
-          accessibilityLabel="Aba atual: Chats"
-        >
-          <Feather name="message-circle" size={24} color="white" />
-          <Text color="white" fontSize={10}>
-            Chats
-          </Text>
-        </YStack>
-        <YStack
-          ai="center"
-          gap="$1"
-          opacity={0.5}
-          onPress={() => router.replace("/notificacoes")}
-          accessible={true}
-          accessibilityRole="button"
-          accessibilityLabel="Aba Alertas"
-        >
-          <Feather name="bell" size={24} color="white" />
-          <Text color="white" fontSize={10}>
-            Alertas
-          </Text>
-        </YStack>
-        <YStack
-          ai="center"
-          gap="$1"
-          opacity={0.5}
-          onPress={() => router.replace("/carros")}
-          accessible={true}
-          accessibilityRole="button"
-          accessibilityLabel="Aba Carros"
-        >
-          <Ionicons name="car-sport" size={26} color="white" />
-          <Text color="white" fontSize={10}>
-            Carros
-          </Text>
-        </YStack>
-      </XStack>
+      <BottomTabBar ativa="mensagens" temMensagemNaoLida={conversas.some((c) => !c.lido)} />
     </SafeAreaView>
   );
 }
