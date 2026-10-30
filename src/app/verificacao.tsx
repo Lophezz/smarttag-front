@@ -60,7 +60,7 @@ export default function Verificacao() {
             <Text
               fontSize="$9"
               fontWeight="800"
-              color="white"
+              color={cores.texto}
               accessibilityRole="header"
             >
               Ativar Conta

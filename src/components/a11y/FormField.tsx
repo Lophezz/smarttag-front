@@ -1,23 +1,15 @@
 import React from "react";
 import { TextInputProps } from "react-native";
 import { YStack, Text, Input, Label } from "tamagui";
-import { cores } from "./colors";
+import { useCores } from "./AccessibilityMenu";
 
-// "style" fica de fora: o Input do Tamagui usa outro tipo de estilo que o do React Native
 type Props = Omit<TextInputProps, "style"> & {
-  /** Rótulo visível. Também vira o nome acessível no nativo (SC 1.3.1, 3.3.2, 2.5.3). */
   label: string;
   id: string;
-  /** Mensagem de erro exibida em texto, não apenas por cor (SC 3.3.1). */
   error?: string;
-  /** Instrução auxiliar sempre visível (SC 3.3.2). */
   helper?: string;
 };
 
-/**
- * Campo de formulário com rótulo visível, ajuda e erro anunciável.
- * Use `autoComplete` para identificar a finalidade do campo (SC 1.3.5).
- */
 export default function FormField({
   label,
   id,
@@ -25,16 +17,18 @@ export default function FormField({
   helper,
   ...inputProps
 }: Props) {
+  const cores = useCores();
+
   return (
     <YStack gap="$2">
-      <Label color="white" htmlFor={id}>
+      <Label color={cores.texto} htmlFor={id}>
         {label}
       </Label>
       <Input
         id={id}
         size="$5"
         bg={cores.cartao}
-        color="white"
+        color={cores.texto}
         borderColor={error ? cores.erro : cores.bordaControle}
         borderWidth={1}
         placeholderTextColor={cores.textoSecundario as any}

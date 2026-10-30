@@ -3,7 +3,7 @@ import { Pressable, View, Text, StyleSheet } from "react-native";
 import { Feather, Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { cores } from "./colors";
+import { useCores } from "./AccessibilityMenu";
 
 export type AbaId = "home" | "mensagens" | "notificacoes" | "carros";
 
@@ -20,31 +20,31 @@ const ABAS: { id: AbaId; rota: string; titulo: string }[] = [
   { id: "carros", rota: "/carros", titulo: "Carros" },
 ];
 
-/**
- * Barra de navegação única, usada nas 4 telas principais (antes estava copiada 4x).
- * - Cada aba é um controle focável por teclado com papel "tab" e estado "selected" (SC 2.1.1, 4.1.2).
- * - A aba ativa é indicada por sublinhado + negrito, não só por opacidade (SC 1.4.1).
- * - Os indicadores de pendência entram no nome acessível, não só como bolinha vermelha (SC 1.4.1, 1.3.3).
- * - Texto 12px e alvo >= 44px (SC 1.4.4, boas práticas 2.5.5).
- */
 export default function BottomTabBar({
   ativa,
   temMensagemNaoLida,
   temAlertaPendente,
 }: Props) {
   const insets = useSafeAreaInsets();
+  const cores = useCores();
 
   return (
     <View
       accessibilityRole="tablist"
-      style={[styles.barra, { paddingBottom: Math.max(insets.bottom, 20) }]}
+      style={[
+        styles.barra,
+        {
+          backgroundColor: cores.cartao,
+          borderTopColor: cores.bordaCartao,
+          paddingBottom: Math.max(insets.bottom, 20),
+        },
+      ]}
     >
       {ABAS.map((aba) => {
         const selecionada = aba.id === ativa;
         const pendente =
           (aba.id === "mensagens" && temMensagemNaoLida) ||
           (aba.id === "notificacoes" && temAlertaPendente);
-
         const nome = `${aba.titulo}${
           pendente
             ? aba.id === "mensagens"
@@ -52,6 +52,7 @@ export default function BottomTabBar({
               : ", há alertas pendentes"
             : ""
         }`;
+        const corIconeETexto = selecionada ? cores.texto : cores.textoSecundario;
 
         return (
           <Pressable
@@ -61,11 +62,14 @@ export default function BottomTabBar({
             accessibilityRole="tab"
             accessibilityLabel={nome}
             accessibilityState={{ selected: selecionada }}
-            style={({ focused }: any) => [styles.aba, focused && styles.focada]}
+            style={({ focused }: any) => [
+              styles.aba,
+              focused && { borderWidth: 2, borderColor: cores.link },
+            ]}
           >
             <View>
               {aba.id === "carros" ? (
-                <Ionicons name="car-sport" size={26} color={cores.texto} />
+                <Ionicons name="car-sport" size={26} color={corIconeETexto} />
               ) : (
                 <Feather
                   name={
@@ -76,18 +80,29 @@ export default function BottomTabBar({
                         : "bell"
                   }
                   size={24}
-                  color={selecionada ? cores.texto : cores.textoSecundario}
+                  color={corIconeETexto}
                 />
               )}
-              {pendente && <View style={styles.badge} />}
+              {pendente && (
+                <View style={[styles.badge, { backgroundColor: cores.erro }]} />
+              )}
             </View>
             <Text
-              style={[styles.texto, selecionada && styles.textoAtivo]}
+              style={[
+                styles.texto,
+                { color: corIconeETexto },
+                selecionada && styles.textoAtivo,
+              ]}
               importantForAccessibility="no"
             >
               {aba.titulo}
             </Text>
-            <View style={[styles.sublinhado, selecionada && styles.sublinhadoAtivo]} />
+            <View
+              style={[
+                styles.sublinhado,
+                selecionada && { backgroundColor: cores.link },
+              ]}
+            />
           </Pressable>
         );
       })}
@@ -99,9 +114,7 @@ const styles = StyleSheet.create({
   barra: {
     flexDirection: "row",
     justifyContent: "space-between",
-    backgroundColor: cores.fundo,
     borderTopWidth: 1,
-    borderTopColor: cores.bordaCartao,
     paddingTop: 8,
     paddingHorizontal: 16,
   },
@@ -114,11 +127,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     borderRadius: 8,
   },
-  focada: { borderWidth: 2, borderColor: "#FFFFFF" },
-  texto: { color: cores.textoSecundario, fontSize: 12 },
-  textoAtivo: { color: cores.texto, fontWeight: "700" },
+  texto: { fontSize: 12 },
+  textoAtivo: { fontWeight: "700" },
   sublinhado: { height: 3, width: 24, borderRadius: 2, backgroundColor: "transparent" },
-  sublinhadoAtivo: { backgroundColor: cores.link },
   badge: {
     position: "absolute",
     top: -2,
@@ -126,6 +137,5 @@ const styles = StyleSheet.create({
     width: 10,
     height: 10,
     borderRadius: 5,
-    backgroundColor: cores.erro,
   },
 });

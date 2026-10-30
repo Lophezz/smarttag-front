@@ -92,20 +92,20 @@ export default function PaginaAlerta() {
   };
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: "#0F172A" }}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: cores.fundo }}>
       <Stack.Screen options={{ headerShown: false }} />
 
       {isLoading ? (
         <YStack
           f={1}
-          bg="#0F172A"
+          bg={cores.fundo}
           ai="center"
           jc="center"
           accessible={true}
           accessibilityLabel="Carregando dados do veículo"
         >
           <Spinner size="large" color={cores.link} />
-          <Text color="white" mt="$4">
+          <Text color={cores.texto} mt="$4">
             A localizar veículo...
           </Text>
         </YStack>
@@ -121,7 +121,7 @@ export default function PaginaAlerta() {
             <YStack
               ai="center"
               gap="$4"
-              bg="#1E293B"
+              bg={cores.cartao}
               p="$6"
               br="$4"
               borderWidth={1}
@@ -135,7 +135,7 @@ export default function PaginaAlerta() {
                 importantForAccessibility="no"
               />
               <Text
-                color="white"
+                color={cores.texto}
                 fontSize="$6"
                 fontWeight="bold"
                 textAlign="center"
@@ -153,7 +153,7 @@ export default function PaginaAlerta() {
               <Button
                 size="$4"
                 bg={cores.botaoPrimario}
-                color="white"
+                color={cores.texto}
                 mt="$4"
                 onPress={voltar}
               >
@@ -169,12 +169,12 @@ export default function PaginaAlerta() {
                 <Ionicons
                   name="car-sport"
                   size={64}
-                  color="white"
+                  color={cores.texto}
                   accessibilityElementsHidden
                   importantForAccessibility="no"
                 />
                 <Text
-                  color="white"
+                  color={cores.texto}
                   fontSize="$6"
                   fontWeight="bold"
                   textAlign="center"
@@ -191,11 +191,11 @@ export default function PaginaAlerta() {
               {/* CARD DO CARRO */}
               {carro && (
                 <YStack
-                  bg="#1E293B"
+                  bg={cores.cartao}
                   br="$4"
                   overflow="hidden"
                   borderWidth={1}
-                  borderColor="#334155"
+                  borderColor={cores.bordaCartao}
                   accessible={true}
                   accessibilityLabel={`Veículo modelo ${carro.modelo}, placa ${carro.placa}`}
                 >
@@ -212,7 +212,7 @@ export default function PaginaAlerta() {
                     <YStack
                       width="100%"
                       height={120}
-                      bg="#0F172A"
+                      bg={cores.fundo}
                       jc="center"
                       ai="center"
                     >
@@ -220,7 +220,7 @@ export default function PaginaAlerta() {
                     </YStack>
                   )}
                   <YStack p="$4" ai="center">
-                    <Text color="white" fontSize="$5" fontWeight="bold">
+                    <Text color={cores.texto} fontSize="$5" fontWeight="bold">
                       {carro.modelo}
                     </Text>
                     <Text color="#94A3B8" fontSize="$4" mt="$1">
@@ -240,8 +240,8 @@ export default function PaginaAlerta() {
                   <Button
                     key={opcao.id}
                     size="$5"
-                    bg="#334155"
-                    color="white"
+                    bg={cores.botaoNeutro}
+                    color={cores.texto}
                     justifyContent="flex-start"
                     icon={
                       <Feather
@@ -266,10 +266,10 @@ export default function PaginaAlerta() {
                 gap="$3"
                 pt="$4"
                 borderTopWidth={1}
-                borderTopColor="#334155"
+                borderTopColor={cores.bordaCartao}
               >
                 <Text
-                  color="white"
+                  color={cores.texto}
                   fontSize="$4"
                   fontWeight="bold"
                   textAlign="center"
@@ -280,7 +280,7 @@ export default function PaginaAlerta() {
                 <Button
                   size="$5"
                   bg={cores.botaoPrimario}
-                  color="white"
+                  color={cores.texto}
                   icon={<Feather name="message-circle" size={20} />}
                   onPress={abrirChat}
                   disabled={isSending}

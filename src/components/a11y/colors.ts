@@ -20,6 +20,8 @@ export const cores = {
   // Bordas de campos e controles (contraste não textual >= 3:1, SC 1.4.11)
   bordaControle: "#64748B", // 3.75:1
   bordaCartao: "#334155", // decorativa
+  /** Texto sempre legível sobre os botões coloridos. */
+  textoEmBotao: "#FFFFFF",
 } as const;
 
 export const ALVO_MINIMO = 44; // dp/px – tamanho mínimo recomendado de alvo de toque

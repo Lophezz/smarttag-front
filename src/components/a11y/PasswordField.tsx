@@ -3,16 +3,13 @@ import { TextInputProps } from "react-native";
 import { YStack, XStack, Text, Input, Label } from "tamagui";
 import { Feather } from "@expo/vector-icons";
 import IconButton from "./IconButton";
-import { cores } from "./colors";
+import { useCores } from "./AccessibilityMenu";
 
-// "style" fica de fora: o Input do Tamagui usa outro tipo de estilo que o do React Native
 type Props = Omit<TextInputProps, "style"> & {
   label: string;
   id: string;
-  /** "current-password" no login, "new-password" no cadastro/redefinição (SC 1.3.5). */
   autoComplete: "current-password" | "new-password";
   helper?: string;
-  /** Conteúdo ao lado do rótulo (ex.: link "Esqueceu a senha?"). */
   accessory?: React.ReactNode;
 };
 
@@ -25,11 +22,12 @@ export default function PasswordField({
   ...inputProps
 }: Props) {
   const [visivel, setVisivel] = useState(false);
+  const cores = useCores();
 
   return (
     <YStack gap="$2">
       <XStack jc="space-between" ai="center">
-        <Label color="white" htmlFor={id}>
+        <Label color={cores.texto} htmlFor={id}>
           {label}
         </Label>
         {accessory}
@@ -47,7 +45,7 @@ export default function PasswordField({
           f={1}
           size="$5"
           bg="transparent"
-          color="white"
+          color={cores.texto}
           borderWidth={0}
           secureTextEntry={!visivel}
           autoComplete={autoComplete}

@@ -68,7 +68,7 @@ export default function ResetarSenha() {
             <Text
               fontSize="$9"
               fontWeight="800"
-              color="white"
+              color={cores.texto}
               accessibilityRole="header"
             >
               Criar Nova Senha

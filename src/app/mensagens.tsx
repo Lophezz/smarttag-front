@@ -1,17 +1,17 @@
 import React, { useState, useCallback } from "react";
 import { ScrollView, Image, TouchableOpacity } from "react-native";
 import { Alert } from "../services/alert";
-import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { YStack, XStack, Text, Spinner } from "tamagui";
 import { Feather, Ionicons } from "@expo/vector-icons";
 import { router, useFocusEffect, Stack } from "expo-router";
 import api from "../services/api";
 import BottomTabBar from "../components/a11y/BottomTabBar";
 import Cabecalho from "../components/a11y/Cabecalho";
-import { cores } from "../components/a11y/colors";
+import { useCores } from "../components/a11y/AccessibilityMenu";
 
 export default function Mensagens() {
-  const insets = useSafeAreaInsets();
+  const cores = useCores();
   const [conversas, setConversas] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -24,7 +24,6 @@ export default function Mensagens() {
   const carregarConversas = async () => {
     setIsLoading(true);
     try {
-      // Endpoint criado pelo Kevin para listar as últimas mensagens agrupadas
       const response = await api.get("/messages/minhas-conversas");
       setConversas(response.data);
     } catch (error) {
@@ -39,8 +38,6 @@ export default function Mensagens() {
     if (!dataStr) return "";
     const data = new Date(dataStr);
     const hoje = new Date();
-
-    // Se for de hoje, mostra só a hora. Se for de outro dia, mostra a data.
     if (data.toDateString() === hoje.toDateString()) {
       return data.toLocaleTimeString("pt-BR", {
         hour: "2-digit",
@@ -59,7 +56,6 @@ export default function Mensagens() {
     modelo: string,
     placa: string,
   ) => {
-    // Redireciona para o futuro ecrã de chat passando os dados na URL
     router.push({
       pathname: `/chat/[sessionId]` as any,
       params: { sessionId, qrcode, modelo, placa },
@@ -67,9 +63,8 @@ export default function Mensagens() {
   };
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: "#0F172A" }}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: cores.fundo }}>
       <Stack.Screen options={{ headerShown: false }} />
-
       <Cabecalho
         titulo="Minhas conversas"
         acao={{
@@ -78,7 +73,6 @@ export default function Mensagens() {
           onPress: carregarConversas,
         }}
       />
-
       {isLoading ? (
         <YStack f={1} jc="center" ai="center">
           <Spinner size="large" color={cores.link} accessibilityLabel="Carregando conversas" accessibilityLiveRegion="polite" />
@@ -96,7 +90,7 @@ export default function Mensagens() {
               accessibilityLabel="Nenhuma conversa ativa encontrada."
             >
               <Feather name="message-square" size={64} color={cores.bordaControle} />
-              <Text color="#94A3B8" fontSize="$4">
+              <Text color={cores.textoSecundario} fontSize="$4">
                 Você não tem mensagens recentes.
               </Text>
             </YStack>
@@ -119,16 +113,15 @@ export default function Mensagens() {
                 accessibilityHint="Abre a sala de chat"
               >
                 <XStack
-                  bg="#1E293B"
+                  bg={cores.cartao}
                   p="$3"
                   br="$4"
                   mb="$3"
                   borderWidth={1}
-                  borderColor="#334155"
+                  borderColor={cores.bordaCartao}
                   ai="center"
                   gap="$3"
                 >
-                  {/* FOTO DO CARRO OU ÍCONE PADRÃO */}
                   {conversa.linkImageCarro ? (
                     <Image
                       source={{ uri: conversa.linkImageCarro }}
@@ -142,19 +135,17 @@ export default function Mensagens() {
                       width={56}
                       height={56}
                       br={28}
-                      bg="#0F172A"
+                      bg={cores.fundo}
                       jc="center"
                       ai="center"
                     >
                       <Ionicons name="car" size={24} color={cores.textoSecundario} />
                     </YStack>
                   )}
-
-                  {/* INFO DA CONVERSA */}
                   <YStack f={1} jc="center">
                     <XStack jc="space-between" ai="center" mb="$1">
                       <Text
-                        color="white"
+                        color={cores.texto}
                         fontSize="$4"
                         fontWeight="bold"
                         numberOfLines={1}
@@ -167,16 +158,13 @@ export default function Mensagens() {
                         {formatarData(conversa.dataHora)}
                       </Text>
                     </XStack>
-
-                    <Text color="#94A3B8" fontSize="$3" numberOfLines={1}>
-                      <Text fontWeight="bold" color="#CBD5E1">
+                    <Text color={cores.textoSecundario} fontSize="$3" numberOfLines={1}>
+                      <Text fontWeight="bold" color={cores.textoSuave}>
                         {conversa.sender}:{" "}
                       </Text>
                       {conversa.conteudo}
                     </Text>
                   </YStack>
-
-                  {/* BOLINHA DE NÃO LIDO (Opcional - backend envia "lido") */}
                   {!conversa.lido && (
                     <YStack
                       width={10}
@@ -193,7 +181,6 @@ export default function Mensagens() {
           )}
         </ScrollView>
       )}
-
       <BottomTabBar ativa="mensagens" temMensagemNaoLida={conversas.some((c) => !c.lido)} />
     </SafeAreaView>
   );

@@ -1,17 +1,17 @@
 import React, { useState, useCallback } from "react";
 import { ScrollView } from "react-native";
 import { Alert } from "../services/alert";
-import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { YStack, XStack, Text, Avatar, Spinner, Button } from "tamagui";
 import { Feather, Ionicons } from "@expo/vector-icons";
 import { router, useFocusEffect, Stack } from "expo-router";
 import api from "../services/api";
 import BottomTabBar from "../components/a11y/BottomTabBar";
 import IconButton from "../components/a11y/IconButton";
-import { cores } from "../components/a11y/colors";
+import { useCores } from "../components/a11y/AccessibilityMenu";
 
 export default function Home() {
-  const insets = useSafeAreaInsets();
+  const cores = useCores();
   const [isLoading, setIsLoading] = useState(true);
   const [historico, setHistorico] = useState<any[]>([]);
   const [temAlertaPendente, setTemAlertaPendente] = useState(false);
@@ -47,7 +47,6 @@ export default function Home() {
   const carregarDadosDaHome = async () => {
     setIsLoading(true);
     try {
-      // Requisita tudo em paralelo: Usuário, Histórico, Alertas Pendentes e Chats
       const [resUsuario, resHistorico, resAlertas, resMensagens] =
         await Promise.all([
           api.get("/auth/me"),
@@ -55,24 +54,20 @@ export default function Home() {
           api.get("/auth/notify"),
           api.get("/messages/minhas-conversas"),
         ]);
-
       const dados = resUsuario.data;
       setUsuario({
         nome: dados.nome || "Usuário",
         pontos: dados.pontos ?? 0,
         status: formatarStatus(dados.citizienStatus),
       });
-
       const histOrdenado = resHistorico.data.sort(
         (a: any, b: any) =>
           new Date(b.data).getTime() - new Date(a.data).getTime(),
       );
       setHistorico(histOrdenado);
 
-      // LÓGICA DAS BADGES (Bolinhas Vermelhas)
       const alertas = resAlertas.data.content || resAlertas.data || [];
       setTemAlertaPendente(alertas.length > 0);
-
       const msgs = resMensagens.data || [];
       setTemMensagemNaoLida(msgs.some((m: any) => m.lido === false));
 
@@ -102,16 +97,16 @@ export default function Home() {
   };
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: "#0F172A" }}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: cores.fundo }}>
       <Stack.Screen options={{ headerShown: false }} />
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ flexGrow: 1 }}
       >
-        <YStack f={1} px="$5" pt="$8" pb="$4" gap="$6">
+        <YStack f={1} px="$5" pt="$10" pb="$4" gap="$6">
           {/* CABEÇALHO */}
-          <XStack ai="center" jc="space-between">
-            <XStack ai="center" gap="$3">
+          <XStack ai="center" jc="space-between" mt="$2">
+            <XStack ai="center" gap="$3" f={1} pr="$2">
               <Avatar
                 circular
                 size="$6"
@@ -119,21 +114,19 @@ export default function Home() {
                 accessibilityLabel={`Iniciais do usuário: ${usuario.nome ? usuario.nome.charAt(0) : "U"}`}
               >
                 <Avatar.Fallback bg={cores.botaoPrimario} jc="center" ai="center">
-                  <Text color="white" fontSize="$5" fontWeight="bold">
+                  <Text color={cores.textoEmBotao} fontSize="$5" fontWeight="bold">
                     {usuario.nome ? usuario.nome.charAt(0).toUpperCase() : "U"}
                   </Text>
                 </Avatar.Fallback>
               </Avatar>
-
               {isLoading ? (
                 <Spinner size="small" color={cores.link} />
               ) : (
-                <Text color="white" fontSize="$5" fontWeight="600">
+                <Text color={cores.texto} fontSize="$5" fontWeight="700" numberOfLines={1} f={1}>
                   {usuario.nome}
                 </Text>
               )}
             </XStack>
-
             {/* ACESSO AO PERFIL */}
             <IconButton
               label="Configurações do perfil"
@@ -146,20 +139,20 @@ export default function Home() {
 
           {/* STATUS DE CIDADÃO */}
           <XStack
-            bg="#1E293B"
+            bg={cores.cartao}
             br="$4"
             p="$4"
             jc="center"
             ai="center"
             borderWidth={1}
-            borderColor="#334155"
+            borderColor={cores.bordaCartao}
             accessible={true}
             accessibilityRole="summary"
             accessibilityLabel={`Seu status atual é ${usuario.status}, e você tem ${usuario.pontos} pontos.`}
           >
             <Text fontSize="$4" fontWeight="600">
               <Text color={cores.link}>{usuario.status} - </Text>
-              <Text color="white">{usuario.pontos} pontos</Text>
+              <Text color={cores.texto}>{usuario.pontos} pontos</Text>
             </Text>
           </XStack>
 
@@ -168,9 +161,9 @@ export default function Home() {
             <Button
               size="$5"
               bg={cores.botaoAlternativo}
-              color="white"
+              color={cores.textoEmBotao}
               fontWeight="700"
-              icon={<Ionicons name="qr-code-outline" size={24} color="white" />}
+              icon={<Ionicons name="qr-code-outline" size={24} color={cores.textoEmBotao} />}
               onPress={() => router.replace("/scanner")}
               accessibilityHint="Abre a câmera para ler o QR Code de um veículo, notificar o proprietário e ganhar pontos"
             >
@@ -193,7 +186,6 @@ export default function Home() {
             >
               Histórico de ações
             </Text>
-
             {isLoading ? (
               <Spinner size="large" color={cores.link} mt="$4" accessibilityLabel="Carregando histórico" accessibilityLiveRegion="polite" />
             ) : historico.length === 0 ? (
@@ -205,7 +197,7 @@ export default function Home() {
                 accessibilityLabel="Nenhuma ação recente encontrada"
               >
                 <Feather name="activity" size={32} color={cores.bordaControle} />
-                <Text color="#94A3B8" fontSize="$3">
+                <Text color={cores.textoSecundario} fontSize="$3">
                   Você ainda não possui interações.
                 </Text>
               </YStack>
@@ -213,11 +205,11 @@ export default function Home() {
               historico.map((acao, index) => (
                 <YStack
                   key={index}
-                  bg="#1E293B"
+                  bg={cores.cartao}
                   p="$4"
                   br="$4"
                   borderWidth={1}
-                  borderColor="#334155"
+                  borderColor={cores.bordaCartao}
                   gap="$2"
                   accessible={true}
                   accessibilityLabel={`${acao.actionType} no veículo ${acao.modelo}, placa ${acao.placa}, registrado em ${formatarData(acao.data)}.`}
@@ -227,10 +219,10 @@ export default function Home() {
                       <Feather name="info" size={20} color={cores.link} />
                     </YStack>
                     <YStack f={1}>
-                      <Text color="white" fontSize="$4" fontWeight="600">
+                      <Text color={cores.texto} fontSize="$4" fontWeight="600">
                         {acao.actionType}
                       </Text>
-                      <Text color="#94A3B8" fontSize="$3" mt="$1">
+                      <Text color={cores.textoSecundario} fontSize="$3" mt="$1">
                         Veículo: {acao.modelo} ({acao.placa})
                       </Text>
                       <Text color={cores.textoSecundario} fontSize="$2" mt="$1">
@@ -244,7 +236,6 @@ export default function Home() {
           </YStack>
         </YStack>
       </ScrollView>
-
       <BottomTabBar
         ativa="home"
         temMensagemNaoLida={temMensagemNaoLida}

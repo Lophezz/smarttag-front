@@ -1,24 +1,23 @@
 import React, { useState, useCallback } from "react";
 import { ScrollView, KeyboardAvoidingView, Platform } from "react-native";
 import { Alert } from "../services/alert";
-import { SafeAreaView } from "react-native-safe-area-context"
-import { YStack, XStack, Text, Button, Spinner, Input, Label } from "tamagui";
-import { Feather, Ionicons } from "@expo/vector-icons";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { YStack, XStack, Text, Button, Spinner } from "tamagui";
+import { Feather } from "@expo/vector-icons";
 import { router, useFocusEffect, Stack } from "expo-router";
 import api from "../services/api";
 import Cabecalho from "../components/a11y/Cabecalho";
 import FormField from "../components/a11y/FormField";
-import { cores } from "../components/a11y/colors";
+import { useCores } from "../components/a11y/AccessibilityMenu";
 
 export default function Perfil() {
+  const cores = useCores();
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
-
   const [userId, setUserId] = useState("");
   const [status, setStatus] = useState({ citizienStatus: "", pontos: 0 });
-
   const [formData, setFormData] = useState({
     nome: "",
     telefone: "",
@@ -57,7 +56,6 @@ export default function Perfil() {
       Alert.alert("Aviso", "O campo Nome não pode estar vazio.");
       return;
     }
-
     setIsSaving(true);
     try {
       await api.put("/auth", {
@@ -122,37 +120,34 @@ export default function Perfil() {
 
   if (isLoading) {
     return (
-      <YStack f={1} bg="#0F172A" ai="center" jc="center">
+      <YStack f={1} bg={cores.fundo} ai="center" jc="center">
         <Spinner size="large" color={cores.link} accessibilityLabel="Carregando perfil" accessibilityLiveRegion="polite" />
       </YStack>
     );
   }
 
-  // Formata o texto do status para exibição
   const statusFormatado = status.citizienStatus
     .replace(/_/g, " ")
     .toLowerCase();
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: "#0F172A" }}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: cores.fundo }}>
       <Stack.Screen options={{ headerShown: false }} />
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === "ios" ? "padding" : "height"}
       >
         <Cabecalho titulo="Meu perfil" onVoltar={() => router.replace("/home")} />
-
         <ScrollView contentContainerStyle={{ flexGrow: 1, paddingBottom: 40 }}>
           <YStack f={1} px="$6" gap="$4">
-            {/* PAINEL DE STATUS E PONTUAÇÃO */}
             <XStack
-              bg="#1E293B"
+              bg={cores.cartao}
               br="$4"
               p="$4"
               jc="space-between"
               ai="center"
               borderWidth={1}
-              borderColor="#334155"
+              borderColor={cores.bordaCartao}
             >
               <YStack>
                 <Text color={cores.textoSecundario} fontSize="$3">
@@ -171,13 +166,12 @@ export default function Perfil() {
                 <Text color={cores.textoSecundario} fontSize="$3">
                   Pontuação
                 </Text>
-                <Text color="white" fontSize="$5" fontWeight="bold">
+                <Text color={cores.texto} fontSize="$5" fontWeight="bold">
                   {status.pontos} pontos
                 </Text>
               </YStack>
             </XStack>
 
-            {/* AVISO DE CONTA EM RISCO */}
             {status.citizienStatus === "CONTA_EM_RISCO" && (
               <YStack
                 bg="rgba(239, 68, 68, 0.15)"
@@ -193,7 +187,7 @@ export default function Perfil() {
                     Atenção: conta em risco de banimento
                   </Text>
                 </XStack>
-                <Text color="#FCA5A5" fontSize="$3">
+                <Text color={cores.texto} fontSize="$3">
                   Detetámos sucessivas avaliações negativas nos seus alertas. Se
                   o seu comportamento violar os nossos Termos de Uso novamente,
                   a sua conta será bloqueada permanentemente.
@@ -210,7 +204,6 @@ export default function Perfil() {
               value={formData.nome}
               onChangeText={(text) => setFormData({ ...formData, nome: text })}
             />
-
             <FormField
               id="perfil-telefone"
               label="Telefone"
@@ -222,7 +215,6 @@ export default function Perfil() {
                 setFormData({ ...formData, telefone: text })
               }
             />
-
             <FormField
               id="perfil-cpf"
               label="CPF"
@@ -232,11 +224,10 @@ export default function Perfil() {
               onChangeText={(text) => setFormData({ ...formData, cpf: text })}
               helper="Somente números."
             />
-
             <Button
               size="$5"
               bg={cores.botaoPrimario}
-              color="white"
+              color={cores.textoEmBotao}
               fontWeight="700"
               mt="$2"
               onPress={handleAtualizarDados}
@@ -246,9 +237,7 @@ export default function Perfil() {
             >
               {isSaving ? "A guardar..." : "Atualizar Dados"}
             </Button>
-
             <YStack borderBottomWidth={1} borderColor={cores.bordaCartao} my="$4" />
-
             <YStack gap="$3" mt="auto">
               <Button
                 size="$4"
@@ -263,11 +252,10 @@ export default function Perfil() {
               >
                 {isDeleting ? "A apagar..." : "Excluir a Minha Conta"}
               </Button>
-
               <Button
                 size="$5"
                 bg={cores.botaoNeutro}
-                color="white"
+                color={cores.texto}
                 fontWeight="700"
                 onPress={handleLogout}
                 disabled={isLoggingOut}

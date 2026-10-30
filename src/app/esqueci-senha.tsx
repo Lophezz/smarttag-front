@@ -63,7 +63,7 @@ export default function EsqueciSenha() {
             <Text
               fontSize="$9"
               fontWeight="800"
-              color="white"
+              color={cores.texto}
               accessibilityRole="header"
             >
               Recuperar Senha

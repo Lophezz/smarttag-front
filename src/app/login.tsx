@@ -58,7 +58,7 @@ export default function Login() {
             <Text
               fontSize="$9"
               fontWeight="800"
-              color="white"
+              color={cores.texto}
               accessibilityRole="header"
             >
               Smart<Text color={cores.link}>Tag</Text>

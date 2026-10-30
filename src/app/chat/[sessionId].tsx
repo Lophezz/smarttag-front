@@ -244,7 +244,7 @@ export default function Chat() {
 
   return (
     <SafeAreaView
-      style={{ flex: 1, backgroundColor: "#0F172A", paddingTop: 0 }}
+      style={{ flex: 1, backgroundColor: cores.fundo, paddingTop: 0 }}
     >
       <Stack.Screen options={{ headerShown: false }} />
 
@@ -269,7 +269,7 @@ export default function Chat() {
           </IconButton>
           <YStack f={1} ml="$2">
             <Text
-              color="white"
+              color={cores.texto}
               fontSize="$5"
               fontWeight="bold"
               numberOfLines={1}
@@ -304,7 +304,11 @@ export default function Chat() {
         {isLoading ? (
           <YStack f={1} jc="center" ai="center">
             <Spinner size="large" color={cores.link} />
-            <Text color={cores.textoSecundario} mt="$4" accessibilityLiveRegion="polite">
+            <Text
+              color={cores.textoSecundario}
+              mt="$4"
+              accessibilityLiveRegion="polite"
+            >
               A carregar conversa...
             </Text>
           </YStack>
@@ -347,7 +351,7 @@ export default function Chat() {
                         {msg.remetente}
                       </Text>
                     )}
-                    <Text color="white" fontSize="$4">
+                    <Text color={isMinha ? cores.texto : "white"} fontSize="$4">
                       {msg.conteudo}
                     </Text>
                     <Text
@@ -370,14 +374,14 @@ export default function Chat() {
 
         {/* BARRA DE INPUT DE MENSAGEM */}
         <XStack
-          bg="#1E293B"
+          bg={cores.cartao}
           pt="$3"
           px="$3"
           pb={Math.max(insets.bottom, 12)}
           ai="center"
           gap="$3"
           borderTopWidth={1}
-          borderTopColor="#334155"
+          borderTopColor={cores.bordaCartao}
         >
           <Input
             f={1}
@@ -385,13 +389,15 @@ export default function Chat() {
             onChangeText={setInputText}
             placeholder="Digite a sua mensagem..."
             placeholderTextColor={cores.textoSecundario as any}
-            bg="#0F172A"
-            color="white"
+            bg={cores.fundo}
+            color={cores.texto}
             borderColor={cores.bordaControle}
             br="$4"
             disabled={!isConnected}
             accessibilityLabel="Escreva uma mensagem"
-            accessibilityHint={isConnected ? undefined : "Aguardando conexão com o chat"}
+            accessibilityHint={
+              isConnected ? undefined : "Aguardando conexão com o chat"
+            }
             autoComplete="off"
             returnKeyType="send"
             onSubmitEditing={enviarMensagem}
