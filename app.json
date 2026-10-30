@@ -10,9 +10,7 @@
     "ios": {
       "icon": "./assets/expo.icon",
       "bundleIdentifier": "com.matheus.smarttag",
-      "associatedDomains": [
-        "applinks:smarttag-front.vercel.app"
-      ]
+      "associatedDomains": ["applinks:smarttag-front.vercel.app"]
     },
     "android": {
       "package": "com.matheus.smarttag",
@@ -34,10 +32,7 @@
               "pathPrefix": "/alerta"
             }
           ],
-          "category": [
-            "BROWSABLE",
-            "DEFAULT"
-          ]
+          "category": ["BROWSABLE", "DEFAULT"]
         }
       ]
     },
@@ -46,6 +41,12 @@
       "favicon": "./assets/images/favicon.png"
     },
     "plugins": [
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "Permita que o SmartTag acesse sua localização para marcar onde você estacionou o seu veículo."
+        }
+      ],
       [
         "expo-camera",
         {

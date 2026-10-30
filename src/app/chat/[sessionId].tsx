@@ -1,11 +1,6 @@
 import "react-native-url-polyfill/auto";
-// Polyfill necessário para o StompJS funcionar no React Native
 import * as encoding from "text-encoding";
 
-// Injeção global forçada para que o Android não falhe na codificação das mensagens
-if (typeof globalThis.TextEncoder === "undefined") {
-  (globalThis as any).TextEncoder = encoding.TextEncoder;
-}
 if (typeof globalThis.TextEncoder === "undefined") {
   (globalThis as any).TextEncoder = encoding.TextEncoder;
   (globalThis as any).TextDecoder = encoding.TextDecoder;
@@ -36,18 +31,17 @@ import { useLocalSearchParams, router, Stack } from "expo-router";
 import { Client } from "@stomp/stompjs";
 import api from "../../services/api";
 import IconButton from "../../components/a11y/IconButton";
-import { cores } from "../../components/a11y/colors";
+import { useCores } from "../../components/a11y/AccessibilityMenu";
 
 export default function Chat() {
   const insets = useSafeAreaInsets();
+  const cores = useCores();
   const { sessionId, qrcode, modelo, placa, isAnonimo } =
     useLocalSearchParams();
-
   const [mensagens, setMensagens] = useState<any[]>([]);
   const [inputText, setInputText] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [isConnected, setIsConnected] = useState(false);
-
   const scrollViewRef = useRef<ScrollView>(null);
   const stompClientRef = useRef<Client | null>(null);
   const mensagensVistas = useRef<Set<string>>(new Set());
@@ -58,7 +52,6 @@ export default function Chat() {
   useEffect(() => {
     carregarHistorico();
     conectarWebSocket();
-
     return () => {
       if (stompClientRef.current) {
         stompClientRef.current.deactivate();
@@ -86,17 +79,13 @@ export default function Chat() {
   };
 
   const conectarWebSocket = () => {
-    // 1. Usar a URL diretamente, sem Axios, para não haver interferências
     const wsURL = "wss://smarttag-6bea18f8625e.herokuapp.com/ws";
-
     const client = new Client({
       brokerURL: wsURL,
-      // 3. ESSENCIAL PARA O REACT NATIVE NO ANDROID:
       forceBinaryWSFrames: true,
       appendMissingNULLonIncoming: true,
-
       debug: function (str) {
-        console.log("[STOMP]", str); // <-- VER SE ISTO É LOGADO AGORA
+        console.log("[STOMP]", str);
       },
       reconnectDelay: 5000,
       heartbeatIncoming: 4000,
@@ -106,14 +95,12 @@ export default function Chat() {
     client.onConnect = () => {
       console.log("[STOMP] CONECTADO COM SUCESSO!");
       setIsConnected(true);
-
       client.subscribe(`/queue/anonimo/${sessionId}`, (message) => {
         if (message.body) {
           const novaMsg = JSON.parse(message.body);
           adicionarMensagem(novaMsg);
         }
       });
-
       client.subscribe("/user/queue/alertas", (message) => {
         if (message.body) {
           const novaMsg = JSON.parse(message.body);
@@ -154,20 +141,15 @@ export default function Chat() {
       : msg.remetente === "Dono do carro";
 
   const adicionarMensagem = (novaMsg: any) => {
-    // Evita duplicar a mensagem na tela e também o anúncio por voz
     const chave = `${novaMsg.dataHora}|${novaMsg.conteudo}`;
     if (mensagensVistas.current.has(chave)) return;
 
-    // Visitantes anônimos recebem uma cópia local para não ficarem sem retorno
-    // visual. Usuários autenticados recebem a cópia do servidor; nesse caso,
-    // trocamos a temporária pela oficial em vez de exibir as duas.
     if (!novaMsg.idTemporario && novaMsg.remetente !== "Dono do carro") {
       const pendente = [...mensagensPendentes.current.entries()].find(
         ([, mensagem]) =>
           mensagem.conteudo === novaMsg.conteudo &&
           mensagem.idSessao === String(novaMsg.idSessao),
       );
-
       if (pendente) {
         const [idTemporario] = pendente;
         mensagensPendentes.current.delete(idTemporario);
@@ -181,11 +163,10 @@ export default function Chat() {
         return;
       }
     }
-    mensagensVistas.current.add(chave);
 
+    mensagensVistas.current.add(chave);
     setMensagens((prev) => [...prev, novaMsg]);
 
-    // Leitores de tela não percebem mensagens que chegam sozinhas: anunciamos (SC 4.1.3)
     if (!ehMinha(novaMsg)) {
       AccessibilityInfo.announceForAccessibility(
         `Nova mensagem de ${novaMsg.remetente}: ${novaMsg.conteudo}`,
@@ -196,13 +177,9 @@ export default function Chat() {
 
   const enviarMensagem = () => {
     if (!inputText.trim() || !stompClientRef.current?.connected) return;
-
     const conteudo = inputText.trim();
     const idTemporario = `local-${Date.now()}-${Math.random().toString(36).slice(2)}`;
-
     try {
-      // Um visitante sem conta não recebe necessariamente o eco do WebSocket.
-      // Exibimos sua própria mensagem e a reconciliamos se o servidor devolvê-la.
       if (isAnonimo === "true") {
         mensagensPendentes.current.set(idTemporario, {
           conteudo,
@@ -217,11 +194,8 @@ export default function Chat() {
           dataHora: new Date().toISOString(),
         });
       }
-
       setInputText("");
       Keyboard.dismiss();
-
-      // Envia para o servidor; a confirmação recebida atualiza a conversa.
       stompClientRef.current.publish({
         destination: `/app/chat/${qrcode}`,
         body: JSON.stringify({
@@ -247,14 +221,12 @@ export default function Chat() {
       style={{ flex: 1, backgroundColor: cores.fundo, paddingTop: 0 }}
     >
       <Stack.Screen options={{ headerShown: false }} />
-
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         keyboardVerticalOffset={Platform.OS === "ios" ? 90 : 25}
       >
-        {/* CABEÇALHO DO CHAT: o papel "header" fica só no título, para o botão
-            Voltar continuar alcançável por leitor de tela e teclado */}
+        {/* CABEÇALHO DO CHAT */}
         <XStack
           bg={cores.cartao}
           px="$2"
@@ -281,7 +253,6 @@ export default function Chat() {
               <Text color={cores.textoSecundario} fontSize="$3">
                 Placa {placa}
               </Text>
-              {/* Estado de conexão: texto + cor, anunciado quando muda (SC 1.4.1, 4.1.3) */}
               <YStack
                 width={8}
                 height={8}
@@ -324,7 +295,6 @@ export default function Chat() {
           >
             {mensagens.map((msg, index) => {
               const isMinha = ehMinha(msg);
-
               return (
                 <XStack
                   key={index}
@@ -340,10 +310,12 @@ export default function Chat() {
                     br="$4"
                     borderBottomRightRadius={isMinha ? 0 : "$4"}
                     borderBottomLeftRadius={isMinha ? "$4" : 0}
+                    borderWidth={isMinha ? 0 : 1}
+                    borderColor={cores.bordaCartao}
                   >
                     {!isMinha && (
                       <Text
-                        color={cores.textoSecundario}
+                        color={cores.link}
                         fontSize={12}
                         mb="$1"
                         fontWeight="bold"
@@ -351,11 +323,16 @@ export default function Chat() {
                         {msg.remetente}
                       </Text>
                     )}
-                    <Text color={isMinha ? cores.texto : "white"} fontSize="$4">
+                    {/* Se a mensagem é minha (balão azul), o texto é sempre branco (#FFFFFF).
+                        Se é da outra pessoa (balão cores.cartao), usa cores.texto (preto no claro, branco no escuro). */}
+                    <Text
+                      color={isMinha ? "#FFFFFF" : cores.texto}
+                      fontSize="$4"
+                    >
                       {msg.conteudo}
                     </Text>
                     <Text
-                      color={isMinha ? "#F1F5F9" : cores.textoSecundario}
+                      color={isMinha ? "#E2E8F0" : cores.textoSecundario}
                       fontSize={12}
                       mt="$1"
                       ta={isMinha ? "right" : "left"}
@@ -414,7 +391,7 @@ export default function Chat() {
             <Feather
               name="send"
               size={20}
-              color={inputText.trim() ? "white" : cores.textoSuave}
+              color={inputText.trim() ? "#FFFFFF" : cores.textoSuave}
             />
           </Button>
         </XStack>

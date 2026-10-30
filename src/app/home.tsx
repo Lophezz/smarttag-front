@@ -9,6 +9,7 @@ import api from "../services/api";
 import BottomTabBar from "../components/a11y/BottomTabBar";
 import IconButton from "../components/a11y/IconButton";
 import { useCores } from "../components/a11y/AccessibilityMenu";
+import OndeEstacioneiCard from "../components/a11y/OndeEstacioneiCard";
 
 export default function Home() {
   const cores = useCores();
@@ -174,6 +175,9 @@ export default function Home() {
               pontos de cidadão!
             </Text>
           </YStack>
+
+          {/* CARD ONDE ESTACIONEI MEU CARRO */}
+          <OndeEstacioneiCard />
 
           {/* HISTÓRICO DE AÇÕES */}
           <YStack gap="$3">
