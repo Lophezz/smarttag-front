@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "smart-tag",
+    "name": "SmartTag",
     "slug": "smart-tag",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -8,17 +8,16 @@
     "scheme": "smarttag",
     "userInterfaceStyle": "automatic",
     "ios": {
-      "icon": "./assets/expo.icon",
       "bundleIdentifier": "com.matheus.smarttag",
-      "associatedDomains": ["applinks:smarttag-front.vercel.app"]
+      "associatedDomains": [
+        "applinks:smarttag-front.vercel.app"
+      ]
     },
     "android": {
       "package": "com.matheus.smarttag",
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
-        "foregroundImage": "./assets/images/android-icon-foreground.png",
-        "backgroundImage": "./assets/images/android-icon-background.png",
-        "monochromeImage": "./assets/images/android-icon-monochrome.png"
+        "backgroundColor": "#0F172A",
+        "foregroundImage": "./assets/images/icon.png"
       },
       "predictiveBackGestureEnabled": false,
       "intentFilters": [
@@ -32,13 +31,22 @@
               "pathPrefix": "/alerta"
             }
           ],
-          "category": ["BROWSABLE", "DEFAULT"]
+          "category": [
+            "BROWSABLE",
+            "DEFAULT"
+          ]
         }
+      ],
+      "permissions": [
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_FINE_LOCATION",
+        "android.permission.CAMERA",
+        "android.permission.RECORD_AUDIO"
       ]
     },
     "web": {
       "output": "static",
-      "favicon": "./assets/images/favicon.png"
+      "favicon": "./assets/images/icon.png"
     },
     "plugins": [
       [
@@ -57,9 +65,9 @@
       [
         "expo-splash-screen",
         {
-          "backgroundColor": "#208AEF",
-          "image": "./assets/images/splash-icon.png",
-          "imageWidth": 76
+          "backgroundColor": "#0F172A",
+          "image": "./assets/images/icon.png",
+          "imageWidth": 140
         }
       ],
       "expo-image",
@@ -69,6 +77,12 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "301c8f87-f2df-48ab-ac99-bf1ed7082c72"
+      }
     }
   }
 }
