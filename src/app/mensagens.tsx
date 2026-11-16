@@ -14,6 +14,8 @@ export default function Mensagens() {
   const cores = useCores();
   const [conversas, setConversas] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  // QR codes dos carros que são meus. null = não deu pra saber (a chamada falhou).
+  const [meusQrcodes, setMeusQrcodes] = useState<Set<string> | null>(null);
 
   useFocusEffect(
     useCallback(() => {
@@ -24,8 +26,18 @@ export default function Mensagens() {
   const carregarConversas = async () => {
     setIsLoading(true);
     try {
-      const response = await api.get("/messages/minhas-conversas");
+      const [response, respCarros] = await Promise.all([
+        api.get("/messages/minhas-conversas"),
+        api.get("/car").catch(() => null),
+      ]);
       setConversas(response.data);
+
+      const listaCarros = respCarros?.data?.content || respCarros?.data;
+      setMeusQrcodes(
+        Array.isArray(listaCarros)
+          ? new Set<string>(listaCarros.map((c: any) => String(c.qrcode)))
+          : null,
+      );
     } catch (error) {
       console.error("Erro ao buscar conversas:", error);
       Alert.alert("Erro", "Não foi possível carregar as suas mensagens.");
@@ -56,9 +68,15 @@ export default function Mensagens() {
     modelo: string,
     placa: string,
   ) => {
+    // Define de que lado eu estou na conversa: se o carro não é meu, sou o
+    // "Anônimo" (balão azul = minhas mensagens). Sem isso o chat inverte as cores.
+    const params: Record<string, string> = { sessionId, qrcode, modelo, placa };
+    if (meusQrcodes) {
+      params.isAnonimo = meusQrcodes.has(String(qrcode)) ? "false" : "true";
+    }
     router.push({
       pathname: `/chat/[sessionId]` as any,
-      params: { sessionId, qrcode, modelo, placa },
+      params,
     });
   };
 

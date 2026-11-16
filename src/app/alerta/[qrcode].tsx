@@ -6,6 +6,7 @@ import { YStack, XStack, Text, Button, Spinner } from "tamagui";
 import { Feather, Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, router, Stack } from "expo-router";
 import api from "../../services/api";
+import IconButton from "../../components/a11y/IconButton";
 import { cores } from "../../components/a11y/colors";
 
 const OPCOES_ALERTA = [
@@ -40,7 +41,7 @@ export default function PaginaAlerta() {
     } catch (error) {
       console.error("Erro ao buscar carro:", error);
       Alert.alert("Erro", "QR Code inválido ou veículo não encontrado.");
-      router.replace("/login");
+      voltar();
     } finally {
       setIsLoading(false);
     }
@@ -95,6 +96,19 @@ export default function PaginaAlerta() {
     <SafeAreaView style={{ flex: 1, backgroundColor: cores.fundo }}>
       <Stack.Screen options={{ headerShown: false }} />
 
+      {/* Botão de voltar: vai para a Home se houver sessão; senão, login */}
+      {!alertaEnviado && (
+        <XStack px="$3" pt="$2">
+          <IconButton
+            label="Voltar para o início"
+            hint="Sai desta tela sem enviar alerta"
+            onPress={voltar}
+          >
+            <Feather name="arrow-left" size={24} color={cores.texto} />
+          </IconButton>
+        </XStack>
+      )}
+
       {isLoading ? (
         <YStack
           f={1}
@@ -144,7 +158,7 @@ export default function PaginaAlerta() {
               >
                 Alerta enviado!
               </Text>
-              <Text color="#94A3B8" fontSize="$4" textAlign="center">
+              <Text color={cores.textoSecundario} fontSize="$4" textAlign="center">
                 Obrigado por ser um bom cidadão. O proprietário do veículo acaba
                 de ser notificado.
               </Text>
@@ -153,7 +167,7 @@ export default function PaginaAlerta() {
               <Button
                 size="$4"
                 bg={cores.botaoPrimario}
-                color={cores.texto}
+                color={cores.textoEmBotao}
                 mt="$4"
                 onPress={voltar}
               >
@@ -223,7 +237,7 @@ export default function PaginaAlerta() {
                     <Text color={cores.texto} fontSize="$5" fontWeight="bold">
                       {carro.modelo}
                     </Text>
-                    <Text color="#94A3B8" fontSize="$4" mt="$1">
+                    <Text color={cores.textoSecundario} fontSize="$4" mt="$1">
                       Placa: {carro.placa}
                     </Text>
                   </YStack>
@@ -280,8 +294,14 @@ export default function PaginaAlerta() {
                 <Button
                   size="$5"
                   bg={cores.botaoPrimario}
-                  color={cores.texto}
-                  icon={<Feather name="message-circle" size={20} />}
+                  color={cores.textoEmBotao}
+                  icon={
+                    <Feather
+                      name="message-circle"
+                      size={20}
+                      color={cores.textoEmBotao}
+                    />
+                  }
                   onPress={abrirChat}
                   disabled={isSending}
                   accessibilityHint="Abre uma sala de mensagens em tempo real com o proprietário do veículo"

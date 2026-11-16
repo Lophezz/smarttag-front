@@ -59,13 +59,33 @@ export default function Chat() {
     };
   }, []);
 
+  // Busca o histórico no servidor e junta com as mensagens locais que ainda
+  // não foram confirmadas. É chamada ao abrir, a cada (re)conexão do WebSocket
+  // e logo depois de enviar, para não perder mensagem que não chegou ao vivo.
   const carregarHistorico = async () => {
     try {
       const response = await api.get(`/messages/history/${sessionId}`);
-      response.data.forEach((m: any) =>
+      const doServidor: any[] = response.data;
+      doServidor.forEach((m: any) =>
         mensagensVistas.current.add(`${m.dataHora}|${m.conteudo}`),
       );
-      setMensagens(response.data);
+
+      setMensagens((prev) => {
+        const locais = prev.filter((m) => {
+          if (!m.idTemporario || !mensagensPendentes.current.has(m.idTemporario))
+            return false;
+          const confirmada = doServidor.some(
+            (s) =>
+              s.conteudo === m.conteudo &&
+              s.remetente !== "Dono do carro" &&
+              new Date(s.dataHora).getTime() >=
+                new Date(m.dataHora).getTime() - 120000,
+          );
+          if (confirmada) mensagensPendentes.current.delete(m.idTemporario);
+          return !confirmada;
+        });
+        return [...doServidor, ...locais];
+      });
       scrollParaOFinal();
     } catch (error: any) {
       const status = error?.response?.status;
@@ -95,6 +115,7 @@ export default function Chat() {
     client.onConnect = () => {
       console.log("[STOMP] CONECTADO COM SUCESSO!");
       setIsConnected(true);
+      // Primeiro assina, depois sincroniza: assim nada se perde entre os dois.
       client.subscribe(`/queue/anonimo/${sessionId}`, (message) => {
         if (message.body) {
           const novaMsg = JSON.parse(message.body);
@@ -109,11 +130,26 @@ export default function Chat() {
           }
         }
       });
+      carregarHistorico();
     };
 
     client.onStompError = (frame) => {
       console.error("Erro no Broker:", frame.headers["message"]);
       console.error("Detalhes:", frame.body);
+      // O servidor recusou a mensagem (ex.: modo privacidade): tira dos
+      // balões as mensagens "otimistas" que ficaram esperando confirmação.
+      const pendentes = new Set(mensagensPendentes.current.keys());
+      if (pendentes.size > 0) {
+        mensagensPendentes.current.clear();
+        setMensagens((prev) =>
+          prev.filter((m) => !m.idTemporario || !pendentes.has(m.idTemporario)),
+        );
+        Alert.alert(
+          "Mensagem não enviada",
+          frame.headers["message"] ||
+            "O proprietário não está recebendo mensagens no momento.",
+        );
+      }
     };
 
     client.onWebSocketError = (evt) => {
@@ -204,6 +240,8 @@ export default function Chat() {
           qrcode,
         }),
       });
+      // Garantia: se a confirmação ao vivo não chegar, busca no servidor.
+      setTimeout(carregarHistorico, 1500);
     } catch (error) {
       console.error("Erro ao enviar:", error);
       Alert.alert("Erro", "A sua mensagem não foi enviada. Tente novamente.");

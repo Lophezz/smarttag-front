@@ -88,9 +88,17 @@ export default function Home() {
     } catch (error: any) {
       console.error("Erro ao carregar home:", error);
       const status = error?.response?.status;
-      if (status === 401 || status === 403 || !error?.response) {
+      // Só desloga quando a sessão realmente expirou. Falha de rede (sem
+      // internet, servidor fora) não deve expulsar o usuário para o login.
+      if (status === 401 || status === 403) {
         router.replace("/login");
         return;
+      }
+      if (!error?.response) {
+        Alert.alert(
+          "Sem conexão",
+          "Não foi possível carregar seus dados. Verifique sua internet e tente novamente.",
+        );
       }
     } finally {
       setIsLoading(false);
